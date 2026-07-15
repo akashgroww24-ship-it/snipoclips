@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: snipoclips
+    env: docker
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # add the rest (SUPABASE_*, ANTHROPIC_API_KEY, GROQ_API_KEY, ADMIN_*, JWT_SECRET,
+      # ALLOWED_ORIGINS, DATA_DIR) in the Render dashboard — never commit secrets.

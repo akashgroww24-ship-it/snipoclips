@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<!-- ===== Security headers (meta-settable subset; full set is in .htaccess) ===== -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  base-uri 'self';
+  object-src 'none';
+  img-src 'self' data: https://www.facebook.com https://www.google-analytics.com https://*.google-analytics.com;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src 'self' https://fonts.gstatic.com;
+  script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.googletagmanager.com;
+  connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://connect.facebook.net https://www.facebook.com;
+  frame-src 'none';
+  form-action 'self';
+  upgrade-insecure-requests;
+" />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<title>Snipoclip — Long videos in, viral shorts out</title>
+<meta name="description" content="Snipoclip turns your long videos into scroll-stopping vertical clips with AI. Auto-captions, smart reframing, and a virality score — in one click." />
+<link rel="canonical" href="https://snipoclip.com/" />
+
+<!-- Favicon (inline SVG = no extra file needed) -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2343B0FF'/%3E%3Cstop offset='.5' stop-color='%237B5CFF'/%3E%3Cstop offset='1' stop-color='%23FF3DBE'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='120' height='120' rx='26' fill='url(%23g)'/%3E%3Cpath d='M60 30 C66 30 70 34 70 39 C80 33 94 30 104 36 C95 41 82 45 73 47 C75 60 71 74 62 90 C60 76 58 60 56 50 C46 46 34 41 24 35 C36 31 50 33 56 38 C56 33 55 30 60 30 Z' fill='%23fff'/%3E%3C/svg%3E" />
+
+<!-- Open Graph (Facebook / WhatsApp / LinkedIn) -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Snipoclip" />
+<meta property="og:url" content="https://snipoclip.com/" />
+<meta property="og:title" content="Snipoclip — Long videos in, viral shorts out" />
+<meta property="og:description" content="AI finds the best moments in your video and turns them into captioned, perfectly framed shorts for Reels, Shorts & TikTok — in one click." />
+<meta property="og:image" content="https://snipoclip.com/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Snipoclip — long videos in, viral shorts out" />
+
+<!-- Twitter / X -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Snipoclip — Long videos in, viral shorts out" />
+<meta name="twitter:description" content="AI turns your long videos into captioned, scroll-stopping shorts in one click." />
+<meta name="twitter:image" content="https://snipoclip.com/og-image.png" />
+
+<!-- Structured data -->
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"SoftwareApplication",
+  "name":"Snipoclip",
+  "applicationCategory":"MultimediaApplication",
+  "operatingSystem":"Web",
+  "description":"AI video clipping tool that turns long videos into viral vertical shorts with auto-captions, smart reframing and a virality score.",
+  "url":"https://snipoclip.com/",
+  "offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"Organization",
+  "name":"Snipoclip",
+  "url":"https://snipoclip.com/",
+  "logo":"https://snipoclip.com/og-image.png",
+  "description":"AI video clipping tool that turns long videos into viral vertical shorts."
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"FAQPage",
+  "mainEntity":[
+    {"@type":"Question","name":"What kinds of videos can I clip?","acceptedAnswer":{"@type":"Answer","text":"Podcasts, interviews, webinars, vlogs, talks and gameplay — any long-form video. Paste a YouTube link or upload a file."}},
+    {"@type":"Question","name":"How long does it take?","acceptedAnswer":{"@type":"Answer","text":"Most videos are processed in a few minutes depending on length, then you get ready-to-post clips."}},
+    {"@type":"Question","name":"Do you offer refunds?","acceptedAnswer":{"@type":"Answer","text":"Yes. New paid subscribers can request a full refund within 7 days of their first payment."}},
+    {"@type":"Question","name":"Which languages are supported?","acceptedAnswer":{"@type":"Answer","text":"Captions support 20+ languages including English and Hindi, with automatic language detection."}}
+  ]
+}
+</script>
+<!-- VideoObject: fill these in once you upload a real demo video so it can show in Google video results -->
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"VideoObject",
+  "name":"Snipoclip — turn long videos into viral shorts",
+  "description":"See how Snipoclip turns a long video into captioned vertical clips with AI.",
+  "thumbnailUrl":"https://snipoclip.com/og-image.png",
+  "uploadDate":"2026-06-16",
+  "contentUrl":"https://snipoclip.com/demo.mp4"
+}
+</script>
+
+<!-- ============================================================
+     NOTE FOR DEPLOYMENT (read me):
+     • Do NOT paste your Claude / Google / Facebook API keys in this file.
+       Anything here is public. Keep keys in your server's environment
+       variables (you already do this for Manav Dharma's Node/Express app).
+     • The "Start free" buttons point at /app — wire that to your signup,
+       and have your server (not the browser) call the Anthropic API.
+     • To use your exact PNG logo instead of the SVG: replace the
+       <span class="logo-mark">…</span> block with
+       <img src="snipoclip-mark.png" alt="Snipoclip" class="logo-img"/>
+     • Policy text below is a solid starting template, NOT legal advice.
+       Have a professional review it and fill in the bracketed details.
+     • TRACKING: set META_PIXEL_ID and GA_MEASUREMENT_ID in the script at
+       the bottom. They load ONLY after the visitor clicks Accept. The
+       Meta PageView sends an eventID — send the SAME id from your server
+       CAPI call so the two dedupe (matches your Manav Dharma setup).
+     ============================================================ -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  /* OBSIDIAN PULSE — same tokens as the studio (see DESIGN.md) */
+  :root{
+    --bg:#0b1326;              /* background            */
+    --bg-2:#131b2e;            /* surface-container-low */
+    --panel:#171f33;           /* surface-container     */
+    --panel-2:#222a3d;         /* surface-container-high*/
+    --line:rgba(255,255,255,.05);
+    --line-strong:rgba(255,255,255,.10);
+    --text:#dae2fd;            /* on-surface            */
+    --muted:#ccc3d8;           /* on-surface-variant    */
+    --muted-2:#958da1;         /* outline               */
+    --violet:#d2bbff;          /* primary               */
+    --violet-c:#7c3aed;        /* primary-container — Electric Violet */
+    --green:#4edea3;           /* secondary             */
+    --blue:#d2bbff;            /* legacy alias → primary */
+    --magenta:#ffb2b9;         /* tertiary              */
+    --grad:linear-gradient(135deg,#7c3aed 0%,#6d28d9 100%);
+    --grad-time:linear-gradient(90deg,#7c3aed 0%,#4edea3 100%);
+    --grad-soft:linear-gradient(135deg,rgba(124,58,237,.18),rgba(210,187,255,.10));
+    --glow:0 0 20px rgba(124,58,237,.4);
+    --glow-soft:0 0 20px rgba(124,58,237,.15);
+    --radius:16px;
+    --radius-sm:8px;
+    --maxw:1180px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--bg);color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;line-height:1.6;
+    -webkit-font-smoothing:antialiased;overflow-x:hidden;
+  }
+  h1,h2,h3,.display{font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;line-height:1.08;margin:0}
+  a{color:inherit;text-decoration:none}
+  img{max-width:100%;display:block}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  .grad-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .eyebrow{font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:inline-flex;align-items:center;gap:8px}
+  .eyebrow::before{content:"";width:26px;height:1px;background:var(--grad)}
+
+  /* ---------- logo ---------- */
+  .logo{display:inline-flex;align-items:center;gap:11px;font-family:'Plus Jakarta Sans';font-weight:600;font-size:21px}
+  .logo-mark{width:30px;height:34px;display:inline-block;filter:drop-shadow(0 4px 14px rgba(124,58,237,.5))}
+  .logo-img{width:34px;height:auto}
+
+  /* ---------- buttons ---------- */
+  .btn{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:15px;border:0;cursor:pointer;border-radius:999px;padding:13px 24px;transition:transform .15s ease,box-shadow .25s ease,background .2s ease;font-family:'Inter'}
+  .btn-primary{background:var(--grad);color:#fff;box-shadow:0 8px 30px rgba(124,58,237,.35)}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 14px 40px rgba(124,58,237,.4)}
+  .btn-ghost{background:rgba(255,255,255,.05);color:var(--text);border:1px solid var(--line-strong)}
+  .btn-ghost:hover{background:rgba(255,255,255,.1);transform:translateY(-2px)}
+  .btn-lg{padding:16px 32px;font-size:16px}
+  :focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:8px}
+
+  /* ---------- nav ---------- */
+  header{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);background:rgba(8,8,15,.72);border-bottom:1px solid transparent;transition:border-color .3s}
+  header.scrolled{border-color:var(--line)}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:72px}
+  .nav-links{display:flex;gap:30px;align-items:center}
+  .nav-links a{color:var(--muted);font-size:15px;font-weight:500;transition:color .2s}
+  .nav-links a:hover{color:var(--text)}
+  .nav-cta{display:flex;gap:12px;align-items:center}
+  .menu-btn{display:none;background:none;border:0;color:var(--text);cursor:pointer}
+
+  /* ---------- hero ---------- */
+  .hero{position:relative;padding:84px 0 60px;overflow:hidden}
+  .glow{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5;pointer-events:none;z-index:0}
+  .glow.a{width:520px;height:520px;background:radial-gradient(circle,rgba(210,187,255,.55),transparent 70%);top:-160px;left:-120px}
+  .glow.b{width:560px;height:560px;background:radial-gradient(circle,rgba(124,58,237,.45),transparent 70%);top:-80px;right:-160px}
+  .hero-inner{position:relative;z-index:2;display:grid;grid-template-columns:1.05fr .95fr;gap:54px;align-items:center}
+  .hero h1{font-size:58px;font-weight:700;margin:18px 0 0}
+  .hero .sub{font-size:19px;color:var(--muted);max-width:520px;margin:22px 0 32px}
+  .hero-cta{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  .hero-note{font-size:13.5px;color:var(--muted-2);margin-top:18px;display:flex;align-items:center;gap:8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;background:var(--grad-soft);border:1px solid var(--line-strong);padding:7px 14px;border-radius:999px;font-size:13px;font-weight:600;color:var(--text)}
+  .dot{width:7px;height:7px;border-radius:50%;background:#4edea3;box-shadow:0 0 10px #4edea3}
+
+  /* ---------- hero demo (before/after) ---------- */
+  .demo{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+  .demo-label{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+  .source{position:relative;border-radius:var(--radius-sm);overflow:hidden;aspect-ratio:16/9;background:linear-gradient(120deg,#1b2440,#241a3a)}
+  .source .scene{position:absolute;inset:0;background:
+     radial-gradient(circle at 30% 40%,rgba(210,187,255,.4),transparent 45%),
+     radial-gradient(circle at 72% 65%,rgba(124,58,237,.35),transparent 45%)}
+  .play{position:absolute;inset:0;margin:auto;width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,.92);display:grid;place-items:center}
+  .play::after{content:"";border-left:16px solid #14141f;border-top:10px solid transparent;border-bottom:10px solid transparent;margin-left:4px}
+  .timeline{position:absolute;left:14px;right:14px;bottom:14px;height:6px;border-radius:3px;background:rgba(255,255,255,.2);overflow:hidden}
+  .timeline span{position:absolute;height:100%;border-radius:3px;background:var(--grad)}
+  .seg1{left:18%;width:14%}.seg2{left:46%;width:11%}.seg3{left:71%;width:16%}
+  .arrow-row{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--muted);font-size:13px;font-weight:600;margin:16px 0}
+  .arrow-row .ln{flex:1;height:1px;background:var(--line)}
+  .clips{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .clip{aspect-ratio:9/16;border-radius:14px;overflow:hidden;position:relative;border:1px solid var(--line);background:#10101a}
+  .clip .bg{position:absolute;inset:0}
+  .clip:nth-child(1) .bg{background:linear-gradient(160deg,#2a3a66,#3a2a5e)}
+  .clip:nth-child(2) .bg{background:linear-gradient(160deg,#3a2a5e,#5e2a52)}
+  .clip:nth-child(3) .bg{background:linear-gradient(160deg,#5e2a52,#662a3e)}
+  .clip .score{position:absolute;top:8px;left:8px;font-size:10px;font-weight:700;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);padding:4px 7px;border-radius:7px;border:1px solid var(--line-strong)}
+  .clip .cap{position:absolute;left:8px;right:8px;bottom:30px;text-align:center}
+  .clip .cap b{font-family:'Plus Jakarta Sans';font-size:12px;font-weight:700;background:rgba(0,0,0,.55);padding:3px 6px;border-radius:5px;line-height:1.5;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+  .clip .bar{position:absolute;left:8px;right:8px;bottom:12px;height:4px;border-radius:2px;background:rgba(255,255,255,.25)}
+  .clip .bar::after{content:"";position:absolute;left:0;top:0;height:100%;width:60%;border-radius:2px;background:#fff}
+
+  /* ---------- generic section ---------- */
+  section{position:relative}
+  .band{padding:84px 0}
+  .center{text-align:center;max-width:680px;margin:0 auto}
+  .center h2{font-size:42px;font-weight:700;margin:16px 0 0}
+  .center p.lead{color:var(--muted);font-size:18px;margin:16px auto 0;max-width:560px}
+
+  /* ---------- trust bar ---------- */
+  .trust{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:30px 0;background:var(--bg-2)}
+  .trust-inner{display:flex;align-items:center;justify-content:center;gap:42px;flex-wrap:wrap}
+  .trust span{color:var(--muted-2);font-weight:600;font-size:15px;letter-spacing:.02em}
+  .trust .k{color:var(--text);font-family:'Plus Jakarta Sans'}
+
+  /* ---------- features ---------- */
+  .grid-feat{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:48px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:26px;transition:transform .2s ease,border-color .2s ease}
+  .card:hover{transform:translateY(-4px);border-color:var(--line-strong)}
+  .ic{width:46px;height:46px;border-radius:12px;background:var(--grad-soft);border:1px solid var(--line-strong);display:grid;place-items:center;margin-bottom:18px}
+  .ic svg{width:23px;height:23px;stroke:url(#ig);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .card h3{font-size:19px;font-weight:600;margin-bottom:8px}
+  .card p{color:var(--muted);font-size:15px;margin:0}
+
+  /* ---------- how it works ---------- */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:50px;position:relative}
+  .step{position:relative;padding-top:8px}
+  .step .num{font-family:'Plus Jakarta Sans';font-size:15px;font-weight:700;color:transparent;background:var(--grad);-webkit-background-clip:text;background-clip:text;border:1px solid var(--line-strong);width:42px;height:42px;border-radius:50%;display:grid;place-items:center;margin-bottom:20px}
+  .step h3{font-size:21px;margin-bottom:10px}
+  .step p{color:var(--muted);font-size:15.5px;margin:0}
+
+  /* ---------- before/after showcase ---------- */
+  .ba{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:48px;align-items:center}
+  .ba-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px}
+  .ba-card .tag{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .ba-card.before .frame{aspect-ratio:16/9;border-radius:12px;background:linear-gradient(120deg,#1c2238,#2a2030);position:relative;overflow:hidden;display:grid;place-items:center}
+  .ba-card .runtime{position:absolute;bottom:10px;right:12px;font-size:12px;font-weight:600;background:rgba(0,0,0,.5);padding:4px 8px;border-radius:6px}
+  .ba-after .row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .ba-after .mini{aspect-ratio:9/16;border-radius:12px;position:relative;overflow:hidden;border:1px solid var(--line)}
+  .ba-after .mini:nth-child(1){background:linear-gradient(160deg,#243a66,#3a2a5e)}
+  .ba-after .mini:nth-child(2){background:linear-gradient(160deg,#3a2a5e,#5e2a52)}
+  .ba-after .mini:nth-child(3){background:linear-gradient(160deg,#5e2a52,#662a3e)}
+  .ba-after .mini b{position:absolute;left:6px;right:6px;bottom:22px;text-align:center;font-family:'Plus Jakarta Sans';font-size:11px;background:rgba(0,0,0,.5);padding:2px 4px;border-radius:4px;line-height:1.4;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+  .ba-after .mini i{position:absolute;top:6px;right:6px;font-style:normal;font-size:9px;font-weight:700;background:var(--grad);padding:3px 6px;border-radius:6px;color:#fff}
+
+  /* ---------- pricing ---------- */
+  .prices{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:50px;align-items:stretch}
+  .price{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:30px;display:flex;flex-direction:column}
+  .price.feat{border-color:transparent;background:
+     linear-gradient(var(--panel),var(--panel)) padding-box,
+     var(--grad) border-box;border:1.5px solid transparent;position:relative}
+  .price.feat .badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--grad);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 14px;border-radius:999px;color:#fff}
+  .price h3{font-size:18px;font-weight:600;color:var(--muted)}
+  .price .amt{font-family:'Plus Jakarta Sans';font-size:44px;font-weight:700;margin:14px 0 2px}
+  .price .amt span{font-size:16px;color:var(--muted);font-weight:500}
+  .price .desc{color:var(--muted);font-size:14.5px;min-height:42px}
+  .price ul{list-style:none;padding:0;margin:22px 0;display:flex;flex-direction:column;gap:12px}
+  .price li{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;color:var(--text)}
+  .price li svg{width:18px;height:18px;flex:none;margin-top:2px;stroke:url(#ig);fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  .price .btn{width:100%;justify-content:center;margin-top:auto}
+
+  /* ---------- testimonials ---------- */
+  .quotes{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:48px}
+  .quote{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:26px}
+  .quote p{font-size:15.5px;margin:0 0 20px}
+  .who{display:flex;align-items:center;gap:12px}
+  .av{width:40px;height:40px;border-radius:50%;background:var(--grad);flex:none}
+  .who b{display:block;font-size:14px}
+  .who span{font-size:13px;color:var(--muted)}
+  .stars{color:#FFC93C;font-size:14px;letter-spacing:2px;margin-bottom:14px}
+
+  /* ---------- faq ---------- */
+  .faq{max-width:760px;margin:44px auto 0}
+  .q{border:1px solid var(--line);border-radius:var(--radius-sm);margin-bottom:12px;background:var(--panel);overflow:hidden}
+  .q summary{cursor:pointer;list-style:none;padding:20px 24px;font-weight:600;font-size:16.5px;display:flex;justify-content:space-between;align-items:center;gap:16px}
+  .q summary::-webkit-details-marker{display:none}
+  .q summary::after{content:"+";font-size:22px;color:var(--muted);transition:transform .2s;font-family:'Plus Jakarta Sans'}
+  .q[open] summary::after{transform:rotate(45deg)}
+  .q .a{padding:0 24px 22px;color:var(--muted);font-size:15px}
+
+  /* ---------- big cta ---------- */
+  .cta-band{position:relative;overflow:hidden;border-radius:26px;background:var(--panel);border:1px solid var(--line);padding:60px 40px;text-align:center;margin:0 auto}
+  .cta-band h2{font-size:40px;font-weight:700;position:relative;z-index:2}
+  .cta-band p{color:var(--muted);font-size:18px;margin:16px auto 30px;max-width:480px;position:relative;z-index:2}
+
+  /* ---------- footer ---------- */
+  footer{border-top:1px solid var(--line);background:var(--bg-2);padding:60px 0 34px;margin-top:90px}
+  .foot-top{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:30px}
+  .foot-brand p{color:var(--muted);font-size:14.5px;max-width:260px;margin:18px 0 0}
+  .foot-col h4{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-2);margin:0 0 16px}
+  .foot-col a{display:block;color:var(--muted);font-size:14.5px;margin-bottom:11px;transition:color .2s}
+  .foot-col a:hover{color:var(--text)}
+  .foot-bottom{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);margin-top:44px;padding-top:24px;color:var(--muted-2);font-size:13.5px;flex-wrap:wrap;gap:12px}
+
+  /* ---------- policy pages ---------- */
+  .policy{display:none;padding:60px 0 40px}
+  .policy.active{display:block}
+  .policy .wrap{max-width:820px}
+  .policy h1{font-size:40px;font-weight:700;margin-bottom:8px}
+  .policy .updated{color:var(--muted-2);font-size:14px;margin-bottom:36px}
+  .policy h2{font-size:22px;margin:36px 0 12px;font-weight:600}
+  .policy p,.policy li{color:var(--muted);font-size:15.5px}
+  .policy ul{padding-left:20px}
+  .policy li{margin-bottom:8px}
+  .policy a.inline{color:var(--blue)}
+  .back{display:inline-flex;align-items:center;gap:8px;color:var(--muted);font-weight:600;font-size:14.5px;margin-bottom:30px}
+  .legal-note{background:var(--grad-soft);border:1px solid var(--line-strong);border-radius:var(--radius-sm);padding:16px 18px;font-size:14px;color:var(--text);margin-top:8px}
+  #app-view{display:none}
+
+  /* ---------- cookie banner ---------- */
+  .cookie{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);width:calc(100% - 36px);max-width:560px;background:var(--panel-2);border:1px solid var(--line-strong);border-radius:16px;padding:18px 20px;display:flex;gap:16px;align-items:center;z-index:80;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+  .cookie p{margin:0;font-size:13.5px;color:var(--muted);flex:1}
+  .cookie .actions{display:flex;gap:8px;flex:none}
+  .cookie .btn{padding:9px 16px;font-size:13.5px}
+  .cookie.hide{display:none}
+
+  /* ---------- responsive ---------- */
+  @media (max-width:900px){
+    .hero-inner{grid-template-columns:1fr;gap:40px}
+    .hero h1{font-size:42px}
+    .grid-feat,.steps,.prices,.quotes,.ba{grid-template-columns:1fr}
+    .foot-top{grid-template-columns:1fr 1fr}
+    .nav-links{display:none}
+    .nav-links.open{display:flex;position:absolute;top:72px;left:0;right:0;flex-direction:column;align-items:stretch;gap:0;background:var(--panel-2);border-bottom:1px solid var(--line);padding:6px 24px 14px;box-shadow:0 20px 40px rgba(0,0,0,.5)}
+    .nav-links.open a{padding:15px 2px;border-bottom:1px solid var(--line);color:var(--text);font-size:16px}
+    .nav-links.open a:last-child{border-bottom:0}
+    .menu-btn{display:block}
+    .nav-cta .btn-ghost{display:none}
+    .center h2,.cta-band h2{font-size:32px}
+    .ba-after .row{grid-template-columns:repeat(3,1fr)}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  }
+  /* reveal */
+  .reveal{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease}
+  .reveal.in{opacity:1;transform:none}
+  /* ===== Glassmorphism upgrade ===== */
+  :root{--glass:rgba(255,255,255,.055);--glass-2:rgba(255,255,255,.09);--glass-line:rgba(255,255,255,.14);--glass-blur:blur(18px) saturate(150%)}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:radial-gradient(42rem 42rem at 10% 6%,rgba(210,187,255,.20),transparent 60%),radial-gradient(40rem 40rem at 90% 12%,rgba(124,58,237,.15),transparent 60%),radial-gradient(48rem 48rem at 50% 112%,rgba(124,58,237,.18),transparent 60%)}
+  .demo,.card,.ba-card,.price,.quote,.q,.cta-band{background:var(--glass)!important;-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);border:1px solid var(--glass-line)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 24px 60px rgba(0,0,0,.45)!important}
+  .card,.price,.quote{transition:transform .2s ease,border-color .2s ease,background .2s ease}
+  .card:hover,.price:hover,.quote:hover{background:var(--glass-2)!important;border-color:rgba(255,255,255,.24)!important;transform:translateY(-4px)}
+  .price.feat{border-color:rgba(124,58,237,.5)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 24px 70px rgba(124,58,237,.28)!important}
+  header{background:rgba(8,8,15,.55)!important;-webkit-backdrop-filter:blur(22px) saturate(160%);backdrop-filter:blur(22px) saturate(160%)}
+  .trust{background:rgba(255,255,255,.03)!important;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+  .btn-ghost{-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+  @media (max-width:900px){body::before{background:radial-gradient(32rem 32rem at 50% 0%,rgba(124,58,237,.22),transparent 60%)}}
+</style>
+</head>
+<body>
+
+<!-- gradient defs reused by icons -->
+<svg width="0" height="0" style="position:absolute"><defs>
+  <linearGradient id="ig" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#3FA9FF"/><stop offset=".5" stop-color="#7B5CFF"/><stop offset="1" stop-color="#FF3DBE"/>
+  </linearGradient>
+</defs></svg>
+
+<!-- ============ HEADER ============ -->
+<header id="hdr">
+  <div class="wrap nav">
+    <a href="#/" class="logo" aria-label="Snipoclip home">
+      <span class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="sm" x1="0.15" y1="0" x2="0.85" y2="1">
+              <stop offset="0" stop-color="#43B0FF"/>
+              <stop offset=".5" stop-color="#7B5CFF"/>
+              <stop offset="1" stop-color="#FF3DBE"/>
+            </linearGradient>
+          </defs>
+          <rect x="6" y="6" width="108" height="108" rx="30" fill="url(#sm)"/><path d="M60 30 C66 30 70 34 70 39 C80 33 94 30 104 36 C95 41 82 45 73 47 C75 60 71 74 62 90 C60 76 58 60 56 50 C46 46 34 41 24 35 C36 31 50 33 56 38 C56 33 55 30 60 30 Z" fill="#fff"/>
+        </svg>
+      </span>
+      <span>Snipoclip</span>
+    </a>
+    <nav class="nav-links" id="primary-nav" aria-label="Primary">
+      <a href="/features">Features</a>
+      <a href="/how-it-works">How it works</a>
+      <a href="#results">Results</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/faq">FAQ</a>
+      <a href="/blog/">Blog</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="/login" class="btn btn-ghost" style="padding:11px 20px">Sign in</a>
+      <a href="/login" class="btn btn-primary" style="padding:11px 22px">Start free</a>
+    </div>
+    <button class="menu-btn" id="menu-btn" aria-label="Menu" aria-expanded="false" aria-controls="primary-nav">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- ============ MAIN MARKETING VIEW ============ -->
+<main id="home-view">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="glow a"></div><div class="glow b"></div>
+    <div class="wrap hero-inner">
+      <div>
+        <span class="pill"><span class="dot"></span> Powered by frontier AI · Built for Indian creators</span>
+        <h1>Long videos in.<br><span class="grad-text">Viral shorts out.</span></h1>
+        <p class="sub">Snipoclip watches your full video, finds the moments worth posting, and turns them into captioned, perfectly framed shorts for Reels, Shorts &amp; TikTok — in one click. Works beautifully in <strong>Hindi, Hinglish &amp; English</strong>, with captions and hooks written in your language.</p>
+        <div class="hero-cta">
+          <a href="/login" class="btn btn-primary btn-lg">Start free — no card needed</a>
+          <a href="#results" class="btn btn-ghost btn-lg">See sample results</a>
+        </div>
+        <p class="hero-note"><span class="dot"></span> Free plan • 2 clips to start • ₹ pricing &amp; UPI • Made for Indian YouTubers &amp; podcasters</p>
+      </div>
+
+      <!-- before/after demo -->
+      <div class="demo reveal">
+        <div class="demo-label"><span>Your 48-min podcast</span><span class="grad-text">AI finds the gold</span></div>
+        <div class="source">
+          <div class="scene"></div>
+          <div class="play" aria-hidden="true"></div>
+          <div class="timeline"><span class="seg1"></span><span class="seg2"></span><span class="seg3"></span></div>
+        </div>
+        <div class="arrow-row"><span class="ln"></span>↓ 8 clips ready ↓<span class="ln"></span></div>
+        <div class="clips">
+          <div class="clip"><div class="bg"></div><span class="score">⚡ 94</span><div class="cap"><b>"This changed everything"</b></div><div class="bar"></div></div>
+          <div class="clip"><div class="bg"></div><span class="score">⚡ 89</span><div class="cap"><b>The $0 growth hack</b></div><div class="bar"></div></div>
+          <div class="clip"><div class="bg"></div><span class="score">⚡ 91</span><div class="cap"><b>Nobody talks about this</b></div><div class="bar"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRUST BAR -->
+  <div class="trust">
+    <div class="wrap trust-inner">
+      <span><span class="k">AI</span> finds your best moments</span>
+      <span><span class="k">Karaoke</span> word-by-word captions</span>
+      <span><span class="k">20+</span> languages</span>
+      <span><span class="k">9:16 · 1:1 · 16:9</span> auto-reframe</span>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <section class="band" id="features">
+    <div class="wrap">
+      <div class="center reveal">
+        <span class="eyebrow">Everything in one place</span>
+        <h2>Built to make clipping <span class="grad-text">effortless</span></h2>
+        <p class="lead">Drop a link or a file. Snipoclip handles the editing grunt-work so you can focus on posting.</p>
+      </div>
+      <div class="grid-feat">
+        <div class="card reveal">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="9"/></svg></div>
+          <h3>AI highlight detection</h3>
+          <p>The model reads the whole video — speech, energy, sentiment — and pulls the moments most likely to perform.</p>
+        </div>
+        <div class="card reveal">
+          <div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 10h6M7 14h10"/></svg></div>
+          <h3>Animated captions</h3>
+          <p>Word-by-word captions in 20+ languages with styles you can brand — high accuracy, fully editable.</p>
+        </div>
+        <div class="card reveal">
+          <div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 3v18"/></svg></div>
+          <h3>Smart reframe</h3>
+          <p>Auto-converts landscape to 9:16, 1:1 or cinematic 16:9, keeping the speaker in frame the whole time.</p>
+        </div>
+        <div class="card reveal">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></div>
+          <h3>Virality score</h3>
+          <p>Every clip gets a 0–100 score so you know which ones to post first instead of guessing.</p>
+        </div>
+        <div class="card reveal">
+          <div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M2 12h20M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18"/></svg></div>
+          <h3>Brand templates &amp; B-roll</h3>
+          <p>Save your logo, fonts, colours and intros once. Add auto B-roll to keep every clip on-brand.</p>
+        </div>
+        <div class="card reveal">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+          <h3>Schedule &amp; post</h3>
+          <p>Send finished clips straight to your social accounts, or export clean files for Premiere &amp; CapCut.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="band" id="how" style="background:var(--bg-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+    <div class="wrap">
+      <div class="center reveal">
+        <span class="eyebrow">Three steps</span>
+        <h2>From raw footage to ready-to-post</h2>
+      </div>
+      <div class="steps">
+        <div class="step reveal"><div class="num">1</div><h3>Drop your video</h3><p>Paste a YouTube link or upload a file — podcasts, interviews, webinars, vlogs, gameplay, anything up to long-form.</p></div>
+        <div class="step reveal"><div class="num">2</div><h3>AI does the editing</h3><p>Snipoclip finds the best moments, reframes them vertically, and adds captions — usually in a few minutes.</p></div>
+        <div class="step reveal"><div class="num">3</div><h3>Review &amp; publish</h3><p>Tweak captions if you like, sort by virality score, then download or post directly to your channels.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BEFORE / AFTER RESULTS -->
+  <section class="band" id="results">
+    <div class="wrap">
+      <div class="center reveal">
+        <span class="eyebrow">Before &amp; after</span>
+        <h2>One long video. <span class="grad-text">Eight scroll-stoppers.</span></h2>
+        <p class="lead">Here's what a single upload turns into — vertical, captioned, and ready to post.</p>
+      </div>
+      <div class="ba">
+        <div class="ba-card before reveal">
+          <div class="tag"><span class="dot" style="background:var(--blue);box-shadow:0 0 10px var(--blue)"></span> Before — your upload</div>
+          <div class="frame">
+            <div class="play" aria-hidden="true" style="position:static"></div>
+            <div class="runtime">48:12</div>
+          </div>
+          <p style="color:var(--muted);font-size:14.5px;margin:16px 0 0">One landscape file. Hours of footage no one has time to scrub through.</p>
+        </div>
+        <div class="ba-card ba-after reveal">
+          <div class="tag"><span class="dot"></span> After — Snipoclip</div>
+          <div class="row">
+            <div class="mini"><i>⚡94</i><b>"This changed everything"</b></div>
+            <div class="mini"><i>⚡91</i><b>The $0 growth hack</b></div>
+            <div class="mini"><i>⚡89</i><b>Nobody talks about this</b></div>
+          </div>
+          <p style="color:var(--muted);font-size:14.5px;margin:16px 0 0">Vertical, captioned, scored and ready for Reels, Shorts &amp; TikTok.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAGLINES STRIP -->
+  <section class="band" style="padding-top:0">
+    <div class="wrap">
+      <div class="cta-band reveal">
+        <div class="glow a" style="opacity:.35;top:-200px;left:10%"></div>
+        <div class="glow b" style="opacity:.35;top:-160px;right:10%"></div>
+        <span class="eyebrow" style="position:relative;z-index:2">Why Snipoclip</span>
+        <h2 style="margin-top:14px">"Find the gold in every video."</h2>
+        <p>One long upload becomes a week of scroll-stopping shorts — captioned, reframed and ranked, in minutes.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="band" id="pricing" style="background:var(--bg-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+    <div class="wrap">
+      <div class="center reveal">
+        <span class="eyebrow">Simple pricing</span>
+        <h2>Start free. Upgrade when you're posting daily.</h2>
+        <p class="lead">Prices shown in USD. Cancel anytime. See our <a href="#/refund" class="inline" style="color:var(--blue)">refund policy</a>.</p>
+      </div>
+      <div class="prices">
+        <div class="price reveal">
+          <h3>Single Slice</h3>
+          <div class="amt">$12.49<span> / month</span></div>
+          <p class="desc">For individual creators starting their short-form workflow.</p>
+          <ul>
+            <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> 10 AI clips per month</li>
+            <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> AI captions + 9:16 reframe</li>
+            <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Virality score</li>
+            <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Built-in caption editor</li>
+            <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Basic analytics</li>
+          </ul>
+          <a href="/login" onclick="try{localStorage.setItem('sc_buy','single')}catch(e){}" class="btn btn-ghost">Start with Single Slice</a>
+        </div>
+        <div class="price feat reveal">
+          <span class="badge">Most popular</span>
+          <h3>Half Pie</h3>
+          <div class="amt">$24.99<span> / month</span></div>
+          <p class="desc">For growing creators posting more often.</p>
+          <ul>
+            <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> 30 AI clips per month</li>
+            <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> No watermark, up to 1080p</li>
+            <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> AI B-roll + audio enhance</li>
+            <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Caption styles &amp; editor</li>
+            <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Advanced analytics</li>
+          </ul>
+          <a href="/login" onclick="try{localStorage.setItem('sc_buy','half')}catch(e){}" class="btn btn-primary">Start with Half Pie</a>
+        </div>
+        <div class="price reveal">
+          <h3>Full Pie</h3>
+          <div class="amt">$49.99<span> / month</span></div>
+          <p class="desc">For serious creators &amp; small teams posting daily.</p>
+          <ul>
+            <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> 100 AI clips per month</li>
+            <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Up to 4K export</li>
+            <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> AI B-roll (cinematic) + audio enhance</li>
+            <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Advanced analytics &amp; insights</li>
+            <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Priority processing &amp; support</li>
+          </ul>
+          <a href="/login" onclick="try{localStorage.setItem('sc_buy','full')}catch(e){}" class="btn btn-ghost">Start with Full Pie</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS -->
+  <section class="band">
+    <div class="wrap">
+      <div class="center reveal">
+        <span class="eyebrow">Loved by creators</span>
+        <h2>Posting daily, finally feels doable</h2>
+      </div>
+      <div class="quotes">
+        <div class="quote reveal">
+          <div class="stars">★★★★★</div>
+          <p>"I turned one 40-minute podcast into a week of Reels. What used to take my editor a full day now takes me ten minutes."</p>
+          <div class="who"><span class="av"></span><div><b>Aarav M.</b><span>Podcast host</span></div></div>
+        </div>
+        <div class="quote reveal">
+          <div class="stars">★★★★★</div>
+          <p>"The virality score is scarily accurate. The clips it ranks highest are the ones that actually pop on Shorts."</p>
+          <div class="who"><span class="av"></span><div><b>Sofia R.</b><span>Content creator</span></div></div>
+        </div>
+        <div class="quote reveal">
+          <div class="stars">★★★★★</div>
+          <p>"Captions are clean, reframing keeps me centred, and the Hindi support means I can clip for both my audiences."</p>
+          <div class="who"><span class="av"></span><div><b>Karan D.</b><span>Agency owner</span></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="band" id="faq" style="background:var(--bg-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+    <div class="wrap">
+      <div class="center reveal">
+        <span class="eyebrow">Questions</span>
+        <h2>Good to know</h2>
+      </div>
+      <div class="faq">
+        <details class="q"><summary>What kinds of videos can I clip?</summary><div class="a">Podcasts, interviews, webinars, vlogs, talks, gameplay — basically any long-form video. Paste a YouTube link or upload a file directly.</div></details>
+        <details class="q"><summary>How long does it take?</summary><div class="a">Most videos are processed in a few minutes depending on length. You'll get an email when your clips are ready.</div></details>
+        <details class="q"><summary>Do you offer refunds?</summary><div class="a">Yes. New paid subscribers can request a full refund within 7 days of their first payment. See the full <a href="#/refund" class="inline">Refund Policy</a> for details and how to request one.</div></details>
+        <details class="q"><summary>Is there a free plan?</summary><div class="a">Yes — the Free plan gives you 2 clips to try with captions and reframing, no card required. Upgrade only when you need more.</div></details>
+        <details class="q"><summary>Which languages are supported?</summary><div class="a">Captions support 20+ languages including English and Hindi, with automatic language detection.</div></details>
+        <details class="q"><summary>Can I cancel anytime?</summary><div class="a">Absolutely. Cancel from your dashboard in a couple of clicks; you keep access until the end of your billing period.</div></details>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="band">
+    <div class="wrap">
+      <div class="cta-band reveal">
+        <div class="glow a" style="top:-220px;left:5%"></div>
+        <div class="glow b" style="top:-180px;right:5%"></div>
+        <h2>Your next viral clip is hiding in a video you already made.</h2>
+        <p>Let Snipoclip find it. Start free in under a minute.</p>
+        <a href="/login" class="btn btn-primary btn-lg" style="position:relative;z-index:2">Start clipping free</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ APP PLACEHOLDER VIEW ============ -->
+<section id="app-view" class="band">
+  <div class="wrap center">
+    <h2>Taking you to your studio…</h2>
+    <p class="lead">Taking you to sign in… Your server (holding your private API keys as environment variables) does the clipping and calls the AI — never the browser.</p>
+    <a href="#/" class="btn btn-ghost btn-lg" style="margin-top:24px">Back to home</a>
+  </div>
+</section>
+
+<!-- ============ POLICY PAGES ============ -->
+<section class="policy" id="terms">
+  <div class="wrap">
+    <a href="#/" class="back">← Back to home</a>
+    <h1>Terms of Service</h1>
+    <p class="updated">Last updated: 16 June 2026</p>
+    <div class="legal-note">This is a starting template, not legal advice. Replace bracketed details and have a qualified professional review it before publishing.</div>
+
+    <h2>1. Agreement</h2>
+    <p>These Terms govern your use of Snipoclip ("Service"), operated by Atom, located at PL 7 Shankar Vihar, Lalkuan, Ghaziabad, 201001, India. By creating an account or using the Service, you agree to these Terms.</p>
+
+    <h2>2. Your account</h2>
+    <p>You must provide accurate information and are responsible for activity under your account. You must be at least 18 years old, or the age of majority in your jurisdiction, to use the Service.</p>
+
+    <h2>3. Your content</h2>
+    <p>You retain ownership of videos you upload. You grant us a limited licence to process, store and transform your content solely to provide the Service. You confirm you have the rights to any content you upload and that it does not infringe third-party rights or violate any law.</p>
+
+    <h2>4. Acceptable use</h2>
+    <ul>
+      <li>No uploading of content you do not have the rights to use.</li>
+      <li>No unlawful, infringing, hateful, or sexually exploitative material.</li>
+      <li>No attempts to reverse-engineer, overload, or abuse the Service or its APIs.</li>
+    </ul>
+
+    <h2>5. Subscriptions &amp; billing</h2>
+    <p>Paid plans renew automatically until cancelled. You can cancel anytime from your dashboard. Fees are billed in advance and are non-refundable except as set out in our <a href="#/refund" class="inline">Refund Policy</a>.</p>
+
+    <h2>6. Service availability</h2>
+    <p>We aim for high availability but do not guarantee uninterrupted service. Features may change as the product evolves.</p>
+
+    <h2>7. Limitation of liability</h2>
+    <p>To the maximum extent permitted by law, the Service is provided "as is". We are not liable for indirect or consequential damages. Our total liability is limited to the amount you paid in the prior 12 months.</p>
+
+    <h2>8. Termination</h2>
+    <p>We may suspend or terminate accounts that breach these Terms. You may close your account at any time.</p>
+
+    <h2>9. Governing law</h2>
+    <p>These Terms are governed by the laws of India, with exclusive jurisdiction in the courts of Ghaziabad, Uttar Pradesh.</p>
+
+    <h2>10. Contact</h2>
+    <p>Questions? Email <a href="mailto:support@snipoclip.com" class="inline">support@snipoclip.com</a>.</p>
+  </div>
+</section>
+
+<section class="policy" id="privacy">
+  <div class="wrap">
+    <a href="#/" class="back">← Back to home</a>
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: 16 June 2026</p>
+    <div class="legal-note">Template only — not legal advice. Review with a professional and align it with your actual data practices.</div>
+
+    <h2>1. What we collect</h2>
+    <ul>
+      <li><b>Account data:</b> name, email, and authentication details (including via Google sign-in).</li>
+      <li><b>Content:</b> videos and files you upload, and the clips generated from them.</li>
+      <li><b>Usage data:</b> device, browser, and interaction data to improve the Service.</li>
+      <li><b>Payment data:</b> handled by our payment processor; we do not store full card details.</li>
+    </ul>
+
+    <h2>2. How we use it</h2>
+    <p>To provide and improve the Service, process payments, communicate with you, and meet legal obligations. We do not sell your personal data.</p>
+
+    <h2>3. Third-party processors</h2>
+    <p>We use trusted providers for AI processing, hosting, analytics, authentication (Google) and payments. They process data only on our instructions.</p>
+
+    <h2>4. Your content &amp; AI</h2>
+    <p>Your videos are processed to generate clips. We do not use your private content to train third-party models without your consent.</p>
+
+    <h2>5. Data retention</h2>
+    <p>We keep your content while your account is active. You can delete projects anytime; deleted data is removed from active systems within 30 days.</p>
+
+    <h2>6. Your rights</h2>
+    <p>You may access, correct, export or delete your personal data by emailing <a href="mailto:privacy@snipoclip.com" class="inline">privacy@snipoclip.com</a>.</p>
+
+    <h2>7. Cookies</h2>
+    <p>See our <a href="#/cookies" class="inline">Cookie Policy</a> for details on the cookies we use and your choices.</p>
+
+    <h2>8. Contact</h2>
+    <p>Privacy questions: <a href="mailto:privacy@snipoclip.com" class="inline">privacy@snipoclip.com</a>.</p>
+  </div>
+</section>
+
+<section class="policy" id="refund">
+  <div class="wrap">
+    <a href="#/" class="back">← Back to home</a>
+    <h1>Refund Policy</h1>
+    <p class="updated">Last updated: 16 June 2026</p>
+    <div class="legal-note">Template only — not legal advice. Adjust the windows and terms to match your business and local consumer law.</div>
+
+    <h2>1. 7-day money-back guarantee</h2>
+    <p>If you're a new paid subscriber and you're not happy, email us within <b>7 days</b> of your first payment for a full refund of that payment — no lengthy questions.</p>
+
+    <h2>2. Renewals</h2>
+    <p>Renewal charges (after your first billing period) are generally non-refundable. To avoid a renewal, cancel before your billing date — you keep access until the period ends. If you were charged for a renewal you didn't intend and contact us within <b>3 days</b>, we'll review it in good faith.</p>
+
+    <h2>3. What isn't refundable</h2>
+    <ul>
+      <li>Free-plan usage (there's nothing to refund).</li>
+      <li>Partial months once a billing period has started, except as required by law.</li>
+      <li>Accounts terminated for breach of our <a href="#/terms" class="inline">Terms of Service</a>.</li>
+    </ul>
+
+    <h2>4. How to request a refund</h2>
+    <p>Email <a href="mailto:support@snipoclip.com" class="inline">support@snipoclip.com</a> from your account email with the subject "Refund request" and your invoice number. Approved refunds are returned to your original payment method, typically within <b>5–10 business days</b> (timing depends on your bank/processor).</p>
+
+    <h2>5. Questions</h2>
+    <p>We're happy to help — reach us at <a href="mailto:support@snipoclip.com" class="inline">support@snipoclip.com</a>.</p>
+  </div>
+</section>
+
+<section class="policy" id="cookies">
+  <div class="wrap">
+    <a href="#/" class="back">← Back to home</a>
+    <h1>Cookie Policy</h1>
+    <p class="updated">Last updated: 16 June 2026</p>
+    <div class="legal-note">Template only — not legal advice. Match this to the cookies your site actually sets.</div>
+
+    <h2>1. What cookies are</h2>
+    <p>Cookies are small files stored on your device that help the site function and remember your preferences.</p>
+
+    <h2>2. Types we use</h2>
+    <ul>
+      <li><b>Essential:</b> needed to log in and keep the Service working. Always on.</li>
+      <li><b>Analytics:</b> help us understand usage so we can improve. Optional.</li>
+      <li><b>Marketing:</b> measure ad performance (e.g. Facebook/Meta pixel). Optional.</li>
+    </ul>
+
+    <h2>3. Your choices</h2>
+    <p>You can accept or decline non-essential cookies via the banner, and change your mind anytime in your browser settings.</p>
+
+    <h2>4. Contact</h2>
+    <p>Questions: <a href="mailto:privacy@snipoclip.com" class="inline">privacy@snipoclip.com</a>.</p>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="wrap">
+    <div class="foot-top">
+      <div class="foot-brand">
+        <a href="#/" class="logo" aria-label="Snipoclip home">
+          <span class="logo-mark" aria-hidden="true">
+            <svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+              <rect x="6" y="6" width="108" height="108" rx="30" fill="url(#sm)"/><path d="M60 30 C66 30 70 34 70 39 C80 33 94 30 104 36 C95 41 82 45 73 47 C75 60 71 74 62 90 C60 76 58 60 56 50 C46 46 34 41 24 35 C36 31 50 33 56 38 C56 33 55 30 60 30 Z" fill="#fff"/>
+            </svg>
+          </span>
+          <span>Snipoclip</span>
+        </a>
+        <p>Turn long videos into scroll-stopping shorts with AI. Find the gold in every video.</p>
+      </div>
+      <div class="foot-col">
+        <h4>Product</h4>
+        <a href="/features">Features</a>
+        <a href="/how-it-works">How it works</a>
+        <a href="#results">Results</a>
+        <a href="/pricing">Pricing</a>
+      </div>
+      <div class="foot-col">
+        <h4>Company</h4>
+        <a href="#/">About</a>
+        <a href="mailto:support@snipoclip.com">Contact</a>
+        <a href="/faq">FAQ</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div class="foot-col">
+        <h4>Legal</h4>
+        <a href="#/terms">Terms of Service</a>
+        <a href="#/privacy">Privacy Policy</a>
+        <a href="#/refund">Refund Policy</a>
+        <a href="#/cookies">Cookie Policy</a>
+        <a href="#" id="cookie-settings">Cookie settings</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 Snipoclip. All rights reserved.</span>
+      <span>Made for creators 💜</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ============ COOKIE BANNER ============ -->
+<div class="cookie hide" id="cookie">
+  <p>We use essential cookies to run Snipoclip, plus optional analytics &amp; marketing cookies. See our <a href="#/cookies" style="color:var(--blue)">Cookie Policy</a>.</p>
+  <div class="actions">
+    <button class="btn btn-ghost" id="ck-decline">Decline</button>
+    <button class="btn btn-primary" id="ck-accept">Accept</button>
+  </div>
+</div>
+
+<script>
+  // ---- sticky header shadow ----
+  const hdr=document.getElementById('hdr');
+  addEventListener('scroll',()=>hdr.classList.toggle('scrolled',scrollY>10));
+
+  // ---- mobile menu (accessible toggle, closes on link click) ----
+  const menuBtn=document.getElementById('menu-btn');
+  const navLinks=document.getElementById('primary-nav');
+  menuBtn.addEventListener('click',()=>{
+    const open=navLinks.classList.toggle('open');
+    menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  navLinks.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{
+    navLinks.classList.remove('open');
+    menuBtn.setAttribute('aria-expanded','false');
+  }));
+
+  // ---- tiny hash router for policy + app pages ----
+  const home=document.getElementById('home-view');
+  const app=document.getElementById('app-view');
+  const policies=['terms','privacy','refund','cookies'];
+  function route(){
+    const h=location.hash.replace('#/','').replace('#','');
+    policies.forEach(p=>document.getElementById(p).classList.remove('active'));
+    if(policies.includes(h)){
+      home.style.display='none';app.style.display='none';
+      document.getElementById(h).classList.add('active');
+      scrollTo(0,0);
+    }else if(h==='app'){
+      home.style.display='none';app.style.display='block';scrollTo(0,0);
+    }else{
+      home.style.display='block';app.style.display='none';
+      // If an in-page anchor was requested (e.g. #features) while a policy
+      // page was open, scroll to it now that home is visible again.
+      if(h){
+        const el=document.getElementById(h);
+        if(el) requestAnimationFrame(()=>el.scrollIntoView({behavior:'smooth',block:'start'}));
+      }
+    }
+  }
+  addEventListener('hashchange',route);
+  route();
+
+  // ---- scroll reveal ----
+  const io=new IntersectionObserver((es)=>{
+    es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})
+  },{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+  // =====================================================================
+  //  CONSENT-GATED TRACKING
+  //  Nothing fires until the visitor accepts. Decline = no pixel, no GA.
+  //  ---------------------------------------------------------------------
+  //  TODO before launch — replace the two placeholders:
+  const META_PIXEL_ID = 'YOUR_PIXEL_ID';            // e.g. '123456789012345'
+  const GA_MEASUREMENT_ID = 'G-XXXXXXXXXX';         // e.g. 'G-ABC123'
+  // =====================================================================
+
+  const ck = document.getElementById('cookie');
+
+  function getPref(){
+    const m = document.cookie.match(/(?:^|;\s*)ck_pref=([^;]+)/);
+    return m ? m[1] : null;            // 'all' | 'essential' | null (no choice yet)
+  }
+  function hasChoice(){ return getPref() !== null; }
+
+  // Show the banner only if the visitor hasn't chosen yet.
+  if(!hasChoice()) setTimeout(()=>ck.classList.remove('hide'), 900);
+
+  // Guards so trackers never load twice.
+  let marketingLoaded = false, analyticsLoaded = false;
+
+  // ---- Meta (Facebook) Pixel — loads only on consent ----
+  function loadMetaPixel(){
+    if(marketingLoaded || META_PIXEL_ID === 'YOUR_PIXEL_ID') return;
+    marketingLoaded = true;
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+      n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}
+      (window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', META_PIXEL_ID);
+
+    // Shared eventID so this browser PageView dedupes against your server CAPI event.
+    // Send the SAME event_id from your Node/Express CAPI call for this pageview.
+    const eventId = 'pv_' + Date.now() + '_' + Math.random().toString(36).slice(2,10);
+    fbq('track', 'PageView', {}, { eventID: eventId });
+    window.__lastPageviewEventId = eventId;   // hand off to your server if you POST it client→server
+  }
+
+  // ---- Google Analytics 4 — loads only on consent ----
+  function loadGA(){
+    if(analyticsLoaded || GA_MEASUREMENT_ID === 'G-XXXXXXXXXX') return;
+    analyticsLoaded = true;
+    const s=document.createElement('script');
+    s.async=true; s.src='https://www.googletagmanager.com/gtag/js?id='+GA_MEASUREMENT_ID;
+    document.head.appendChild(s);
+    window.dataLayer=window.dataLayer||[];
+    function gtag(){dataLayer.push(arguments);}
+    window.gtag=gtag;
+    gtag('js', new Date());
+    gtag('config', GA_MEASUREMENT_ID, { anonymize_ip:true });
+  }
+
+  // Apply a stored/just-made choice.
+  function applyConsent(pref){
+    if(pref === 'all'){ loadGA(); loadMetaPixel(); }
+    // 'essential' (or null) => load nothing. Essential cookies need no script.
+  }
+
+  function setPref(v){
+    // Secure: only sent over HTTPS. SameSite=Lax: blocks cross-site sending (CSRF hygiene).
+    document.cookie = 'ck_pref=' + v + ';path=/;max-age=15552000;SameSite=Lax;Secure';
+    ck.classList.add('hide');
+    applyConsent(v);
+  }
+
+  document.getElementById('ck-accept').onclick  = ()=>setPref('all');
+  document.getElementById('ck-decline').onclick = ()=>setPref('essential');
+
+  // On a return visit, honour the choice they already made.
+  applyConsent(getPref());
+
+  // Let visitors re-open the banner to change their choice anytime.
+  document.getElementById('cookie-settings').onclick = (e)=>{
+    e.preventDefault();
+    ck.classList.remove('hide');
+  };
+
+  // ---- CONVERSION EVENTS (consent-gated) ----
+  // Fires when someone clicks a signup CTA. Sends a Meta "Lead" + GA4 "sign_up".
+  // Both carry the SAME eventID so your server-side CAPI "Lead" dedupes against it.
+  function fireConversion(){
+    const eventId = 'lead_' + Date.now() + '_' + Math.random().toString(36).slice(2,10);
+    window.__lastLeadEventId = eventId;   // POST this to your server, send identical eventID in CAPI
+    if(window.fbq){ fbq('track','Lead', {}, { eventID: eventId }); }
+    if(window.gtag){ gtag('event','sign_up', { method:'cta', event_id:eventId }); }
+    // If consent was declined, fbq/gtag don't exist — nothing fires. That's intended.
+  }
+
+  // All primary CTAs (nav, hero, final) + every pricing-plan button start signup.
+  document.querySelectorAll('a.btn-primary, .price .btn').forEach(b=>{
+    b.addEventListener('click', fireConversion);
+  });
+</script>
+<a href="/test" style="position:fixed;right:18px;bottom:18px;z-index:90;background:linear-gradient(135deg,#3FA9FF,#7B5CFF,#FF3DBE);color:#fff;font-family:Inter,sans-serif;font-weight:600;font-size:14px;padding:11px 18px;border-radius:999px;text-decoration:none;box-shadow:0 10px 30px rgba(123,92,255,.4)">🧪 Test pipeline (dev)</a>
+</body>
+</html>

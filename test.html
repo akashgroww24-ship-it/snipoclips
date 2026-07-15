@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="robots" content="noindex"/>
+<title>Pipeline Test · Snipoclip</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#08080F;--panel:#13131F;--panel2:#171724;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);--text:#F4F5FB;--muted:#9CA1B8;--blue:#3FA9FF;--magenta:#FF3DBE;--green:#3DDC91;--amber:#FFC93C;--grad:linear-gradient(135deg,#3FA9FF,#7B5CFF 48%,#FF3DBE)}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  h1,h2{font-family:'Space Grotesk';letter-spacing:-.02em;margin:0}
+  .wrap{max-width:880px;margin:0 auto;padding:28px 22px 80px}
+  .banner{background:linear-gradient(135deg,rgba(255,201,60,.14),rgba(255,61,190,.12));border:1px solid var(--line2);border-radius:12px;padding:12px 16px;font-size:13.5px;color:var(--text);margin-bottom:24px}
+  .logo{display:flex;align-items:center;gap:10px;font-family:'Space Grotesk';font-weight:700;font-size:20px;margin-bottom:6px}
+  .mark{width:26px;height:30px}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 24px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px}
+  .tabs{display:inline-flex;background:var(--panel2);border-radius:10px;padding:4px;margin-bottom:16px}
+  .tabs button{background:none;border:0;color:var(--muted);font:inherit;font-weight:600;padding:8px 16px;border-radius:7px;cursor:pointer}
+  .tabs button.on{background:var(--grad);color:#fff}
+  input[type=url]{width:100%;background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:13px 14px;color:var(--text);font:inherit}
+  .drop{border:1.5px dashed var(--line2);border-radius:12px;padding:28px;text-align:center;color:var(--muted);cursor:pointer}
+  .go{margin-top:16px;background:var(--grad);color:#fff;border:0;border-radius:10px;padding:13px 24px;font-weight:600;font-size:15px;cursor:pointer}
+  .go:disabled{opacity:.5;cursor:not-allowed}
+  .status{margin-top:16px;font-size:14px;color:var(--muted);min-height:20px}
+  .spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:s 1s linear infinite;vertical-align:-2px;margin-right:8px}
+  @keyframes s{to{transform:rotate(360deg)}}
+  .err{color:var(--magenta)}
+  .clips{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-top:24px}
+  .clip{background:var(--panel2);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .clip video{width:100%;aspect-ratio:9/16;background:#000;display:block}
+  .clip .meta{padding:10px 12px}
+  .clip .score{font-size:11px;font-weight:700;background:var(--grad);color:#fff;padding:2px 8px;border-radius:999px;float:right}
+  .clip .t{font-size:13px;font-weight:600}
+  .clip .dl{display:block;text-align:center;font-size:13px;font-weight:600;color:var(--blue);padding:9px;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo"><svg class="mark" viewBox="0 0 120 140"><defs><linearGradient id="sm" x1=".15" y1="0" x2=".85" y2="1"><stop offset="0" stop-color="#43B0FF"/><stop offset=".5" stop-color="#7B5CFF"/><stop offset="1" stop-color="#FF3DBE"/></linearGradient></defs><rect x="6" y="6" width="108" height="108" rx="30" fill="url(#sm)"/><path d="M60 30 C66 30 70 34 70 39 C80 33 94 30 104 36 C95 41 82 45 73 47 C75 60 71 74 62 90 C60 76 58 60 56 50 C46 46 34 41 24 35 C36 31 50 33 56 38 C56 33 55 30 60 30 Z" fill="#fff"/></svg> Snipoclip — Pipeline Test</div>
+  <p class="sub">Test the clip engine directly. No login, no Supabase, no payment — just Groq + Claude + ffmpeg.</p>
+  <div class="banner">⚠️ Dev tool. It only works when <code>DEV_TEST_MODE=1</code> is set in <code>.env</code>. Turn it off before going live.</div>
+
+  <div class="panel">
+    <div class="tabs"><button id="tabUpload" class="on">Upload file</button><button id="tabUrl">Paste URL</button></div>
+    <div id="paneUpload">
+      <label class="drop" id="drop">Click to choose a short video (1–2 min works best)<br><small id="fileName" style="color:var(--blue)"></small>
+        <input id="file" type="file" accept="video/*" style="display:none"/>
+      </label>
+    </div>
+    <div id="paneUrl" style="display:none">
+      <input id="url" type="url" placeholder="https://youtube.com/watch?v=… (needs yt-dlp installed)"/>
+    </div>
+    <button class="go" id="go">Run the pipeline</button>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="clips" id="clips"></div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+let tab='upload';
+$('tabUpload').onclick=()=>{tab='upload';$('tabUpload').classList.add('on');$('tabUrl').classList.remove('on');$('paneUpload').style.display='block';$('paneUrl').style.display='none';};
+$('tabUrl').onclick=()=>{tab='url';$('tabUrl').classList.add('on');$('tabUpload').classList.remove('on');$('paneUrl').style.display='block';$('paneUpload').style.display='none';};
+$('drop').onclick=()=>$('file').click();
+$('file').onchange=()=>{$('fileName').textContent=$('file').files[0]?.name||'';};
+
+const msgs=['Extracting audio…','Transcribing with Groq…','Asking Claude for the best moments…','Rendering & burning captions…','Almost there…'];
+let timer;
+function startStatus(){
+  let i=0; $('status').innerHTML='<span class="spin"></span>'+msgs[0];
+  timer=setInterval(()=>{ i=(i+1)%msgs.length; $('status').innerHTML='<span class="spin"></span>'+msgs[i]; }, 6000);
+}
+function stopStatus(t,err){ clearInterval(timer); $('status').className='status'+(err?' err':''); $('status').textContent=t; }
+
+$('go').onclick=async()=>{
+  $('clips').innerHTML=''; $('go').disabled=true; startStatus();
+  try{
+    let r;
+    if(tab==='upload'){
+      const f=$('file').files[0];
+      if(!f){ stopStatus('Choose a video file first',true); $('go').disabled=false; return; }
+      const fd=new FormData(); fd.append('video',f);
+      r=await fetch('/api/test-clip',{method:'POST',body:fd});
+    }else{
+      const url=$('url').value.trim();
+      if(!url){ stopStatus('Paste a video URL first',true); $('go').disabled=false; return; }
+      r=await fetch('/api/test-clip',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({videoUrl:url})});
+    }
+    const d=await r.json();
+    if(!r.ok){ stopStatus('Error: '+(d.error||'failed'),true); }
+    else{
+      stopStatus(`Done — ${d.count} clips generated.`);
+      $('clips').innerHTML=d.clips.map(c=>`<div class="clip">
+        <video src="${c.url}" controls preload="metadata"></video>
+        <div class="meta"><span class="score">⚡${c.score||''}</span><div class="t">${c.title||'Clip'}</div></div>
+        <a class="dl" href="${c.url}" download>Download</a></div>`).join('');
+    }
+  }catch(e){ stopStatus('Network error',true); }
+  $('go').disabled=false;
+};
+</script>
+</body>
+</html>

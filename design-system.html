@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SnipoClips — Design System</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* =============================================================================
+   SnipoClips Design System v1  —  single source of truth for the redesign.
+   Everything below is token-driven; live pages consume these same variables and
+   class names so the look changes in one place. Brand kept: dark canvas + the
+   blue→violet→magenta gradient. Signature motif: video timecodes + a scrubber
+   line, because the whole product is about cutting long video into short clips.
+   ============================================================================= */
+:root{
+  /* ---- color: canvas & surfaces ---- */
+  --bg:#08080F; --bg-2:#0E0E18; --surface:#13131F; --surface-2:#171724; --surface-3:#1E1E2E;
+  --line:rgba(255,255,255,.08); --line-2:rgba(255,255,255,.14); --line-3:rgba(255,255,255,.22);
+  /* ---- color: text ---- */
+  --text:#F4F5FB; --muted:#9CA1B8; --muted-2:#6A6F86;
+  /* ---- color: brand ---- */
+  --blue:#3FA9FF; --violet:#7B5CFF; --magenta:#FF3DBE;
+  --grad:linear-gradient(135deg,#3FA9FF 0%,#7B5CFF 48%,#FF3DBE 100%);
+  --grad-soft:linear-gradient(135deg,rgba(63,169,255,.16),rgba(255,61,190,.16));
+  /* ---- color: status ---- */
+  --ok:#37D399; --ok-bg:rgba(55,211,153,.14);
+  --warn:#F5B544; --warn-bg:rgba(245,181,68,.14);
+  --err:#FF5C7A; --err-bg:rgba(255,92,122,.14);
+  --info:#3FA9FF; --info-bg:rgba(63,169,255,.14);
+  /* ---- type scale (1.2 minor third) ---- */
+  --t-xs:12px; --t-sm:13.5px; --t-base:15px; --t-md:17px; --t-lg:20px; --t-xl:26px; --t-2xl:34px; --t-3xl:46px; --t-4xl:60px;
+  /* ---- spacing (4px base) ---- */
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:24px; --s-6:32px; --s-7:48px; --s-8:64px; --s-9:96px;
+  /* ---- radius ---- */
+  --r-xs:8px; --r-sm:12px; --r-md:16px; --r-lg:20px; --r-xl:28px; --r-pill:999px;
+  /* ---- elevation ---- */
+  --e-1:0 1px 2px rgba(0,0,0,.4);
+  --e-2:0 6px 18px rgba(0,0,0,.35);
+  --e-3:0 18px 44px rgba(0,0,0,.45);
+  --e-glow:0 10px 40px rgba(123,92,255,.35);
+  /* ---- motion ---- */
+  --ease:cubic-bezier(.4,0,.2,1); --dur-1:.15s; --dur-2:.25s; --dur-3:.4s;
+  --maxw:1080px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(123,92,255,.12), transparent 60%),
+    radial-gradient(900px 500px at -10% 10%, rgba(63,169,255,.10), transparent 55%),
+    var(--bg);
+  color:var(--text);font-family:'Inter',system-ui,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4,.display{font-family:'Space Grotesk',sans-serif;letter-spacing:-.02em;line-height:1.1;margin:0}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+a{color:inherit;text-decoration:none}
+.grad-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:8px}
+
+/* ---- layout ---- */
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 var(--s-5)}
+.ds-hero{padding:var(--s-9) 0 var(--s-7)}
+.eyebrow{font-family:'JetBrains Mono';font-size:var(--t-xs);font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);display:inline-flex;align-items:center;gap:10px}
+.eyebrow::before{content:"";width:28px;height:1px;background:var(--grad)}
+section.block{padding:var(--s-8) 0;border-top:1px solid var(--line)}
+.block h2{font-size:var(--t-2xl);margin-bottom:var(--s-2)}
+.block .lead{color:var(--muted);font-size:var(--t-md);max-width:560px;margin:0 0 var(--s-6)}
+.grid{display:grid;gap:var(--s-4)}
+.g2{grid-template-columns:repeat(2,1fr)} .g3{grid-template-columns:repeat(3,1fr)} .g4{grid-template-columns:repeat(4,1fr)}
+
+/* ---- signature: timecode chip + scrubber ---- */
+.tc{font-family:'JetBrains Mono';font-size:var(--t-xs);font-weight:600;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-xs);padding:2px 7px}
+.scrub{height:4px;border-radius:var(--r-pill);background:var(--surface-3);position:relative;overflow:hidden}
+.scrub::before{content:"";position:absolute;inset:0 40% 0 0;background:var(--grad);border-radius:var(--r-pill)}
+.scrub::after{content:"";position:absolute;left:60%;top:50%;width:12px;height:12px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);box-shadow:0 0 0 4px rgba(123,92,255,.4)}
+
+/* ---- swatches ---- */
+.swatch{border-radius:var(--r-sm);border:1px solid var(--line);overflow:hidden;background:var(--surface)}
+.swatch .chip{height:72px} .swatch .meta{padding:var(--s-3);font-size:var(--t-xs)}
+.swatch .meta b{display:block;font-family:'Space Grotesk';font-size:var(--t-sm);margin-bottom:2px}
+.swatch .meta code{color:var(--muted);font-family:'JetBrains Mono'}
+
+/* ---- type specimens ---- */
+.spec{border:1px solid var(--line);border-radius:var(--r-md);padding:var(--s-5);background:var(--surface)}
+.spec + .spec{margin-top:var(--s-3)}
+.spec .tag{font-family:'JetBrains Mono';font-size:var(--t-xs);color:var(--muted-2)}
+
+/* ---- buttons ---- */
+.btn{display:inline-flex;align-items:center;gap:8px;font-family:'Inter';font-weight:600;font-size:var(--t-base);border:0;cursor:pointer;border-radius:var(--r-pill);padding:12px 22px;transition:transform var(--dur-1) var(--ease),box-shadow var(--dur-2) var(--ease),background var(--dur-2) var(--ease)}
+.btn:active{transform:translateY(0) scale(.98)}
+.btn-primary{background:var(--grad);color:#fff;box-shadow:var(--e-glow)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 16px 44px rgba(255,61,190,.42)}
+.btn-ghost{background:rgba(255,255,255,.05);color:var(--text);border:1px solid var(--line-2)}
+.btn-ghost:hover{background:rgba(255,255,255,.1);transform:translateY(-2px)}
+.btn-subtle{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+.btn-subtle:hover{color:var(--text);border-color:var(--line-2)}
+.btn-icon{padding:11px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+.btn-icon:hover{color:var(--text);border-color:var(--line-2)}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.btn-lg{padding:15px 30px;font-size:var(--t-md)}
+.row{display:flex;gap:var(--s-3);flex-wrap:wrap;align-items:center}
+
+/* ---- inputs ---- */
+.field{display:block;margin-bottom:var(--s-4)}
+.field label{display:block;font-size:var(--t-sm);font-weight:600;margin-bottom:6px}
+.input,.select,.textarea{width:100%;font-family:'Inter';font-size:var(--t-base);color:var(--text);background:var(--surface-2);border:1px solid var(--line-2);border-radius:var(--r-sm);padding:11px 13px;transition:border-color var(--dur-2) var(--ease),box-shadow var(--dur-2) var(--ease)}
+.input:focus,.select:focus,.textarea:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px rgba(123,92,255,.25)}
+.input::placeholder{color:var(--muted-2)}
+.hint{font-size:var(--t-xs);color:var(--muted);margin-top:5px}
+
+/* ---- cards ---- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--s-5);transition:transform var(--dur-2) var(--ease),border-color var(--dur-2) var(--ease),box-shadow var(--dur-2) var(--ease)}
+.card:hover{transform:translateY(-3px);border-color:var(--line-2);box-shadow:var(--e-2)}
+.card .ic{width:44px;height:44px;border-radius:var(--r-sm);background:var(--grad-soft);border:1px solid var(--line-2);display:grid;place-items:center;margin-bottom:var(--s-4)}
+.card h3{font-size:var(--t-lg);margin-bottom:6px}
+.card p{color:var(--muted);font-size:var(--t-sm);margin:0}
+
+/* ---- clip card (9:16) ---- */
+.clipcard{border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;background:var(--surface)}
+.clipcard .frame{aspect-ratio:9/16;background:linear-gradient(150deg,#1b2440,#2a1a3a);position:relative;display:grid;place-items:end center}
+.clipcard .cap{margin-bottom:14px;font-family:'Space Grotesk';font-weight:700;font-size:var(--t-md);text-align:center;padding:0 12px}
+.clipcard .cap .hl{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.clipcard .score{position:absolute;top:10px;right:10px;font-family:'JetBrains Mono';font-size:var(--t-xs);font-weight:600;background:rgba(0,0,0,.5);border:1px solid var(--line-2);border-radius:var(--r-pill);padding:3px 9px}
+.clipcard .info{padding:var(--s-3);display:flex;align-items:center;gap:8px;justify-content:space-between}
+
+/* ---- badges & chips ---- */
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:var(--t-xs);font-weight:600;border-radius:var(--r-pill);padding:4px 10px;border:1px solid var(--line-2)}
+.badge-grad{background:var(--grad);color:#fff;border:0}
+.badge-muted{background:var(--surface-2);color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:7px;font-size:var(--t-sm);font-weight:600;border-radius:var(--r-pill);padding:5px 12px}
+.chip::before{content:"";width:7px;height:7px;border-radius:50%}
+.chip-ok{background:var(--ok-bg);color:var(--ok)} .chip-ok::before{background:var(--ok)}
+.chip-warn{background:var(--warn-bg);color:var(--warn)} .chip-warn::before{background:var(--warn)}
+.chip-err{background:var(--err-bg);color:var(--err)} .chip-err::before{background:var(--err)}
+.chip-info{background:var(--info-bg);color:var(--info)} .chip-info::before{background:var(--info);animation:pulse 1.4s var(--ease) infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ---- quota meter ---- */
+.meter{background:var(--surface-2);border-radius:var(--r-pill);height:10px;overflow:hidden}
+.meter > i{display:block;height:100%;background:var(--grad);border-radius:var(--r-pill)}
+
+/* ---- processing timeline (the "make waiting feel alive" experience) ---- */
+.timeline{display:flex;flex-direction:column;gap:2px}
+.step{display:flex;align-items:center;gap:var(--s-3);padding:var(--s-3) 0}
+.step .dot{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;border:2px solid var(--line-2);color:var(--muted-2);font-size:var(--t-xs)}
+.step.done .dot{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+.step.active .dot{border-color:var(--violet);color:#fff;background:var(--grad);box-shadow:0 0 0 4px rgba(123,92,255,.25)}
+.step .lbl{font-weight:600;font-size:var(--t-base)}
+.step.pending .lbl{color:var(--muted-2)}
+.step .eta{margin-left:auto;font-family:'JetBrains Mono';font-size:var(--t-xs);color:var(--muted)}
+.step .bar{flex:1;max-width:120px}
+
+/* ---- skeleton ---- */
+.sk{background:linear-gradient(90deg,var(--surface-2) 25%,var(--surface-3) 37%,var(--surface-2) 63%);background-size:400% 100%;animation:shimmer 1.4s infinite linear;border-radius:var(--r-xs)}
+@keyframes shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
+
+/* ---- states ---- */
+.state{border:1px dashed var(--line-2);border-radius:var(--r-md);padding:var(--s-6);text-align:center;background:var(--surface)}
+.state .em{width:56px;height:56px;border-radius:var(--r-md);background:var(--grad-soft);border:1px solid var(--line-2);display:grid;place-items:center;margin:0 auto var(--s-4)}
+.state h4{font-size:var(--t-lg);margin-bottom:6px}
+.state p{color:var(--muted);font-size:var(--t-sm);margin:0 0 var(--s-4)}
+.banner{display:flex;gap:var(--s-3);align-items:flex-start;border-radius:var(--r-sm);padding:var(--s-4);border:1px solid}
+.banner .bi{flex:0 0 auto;margin-top:1px}
+.banner-ok{background:var(--ok-bg);border-color:rgba(55,211,153,.4)} .banner-ok .bi{color:var(--ok)}
+.banner-err{background:var(--err-bg);border-color:rgba(255,92,122,.4)} .banner-err .bi{color:var(--err)}
+.banner b{display:block;font-family:'Space Grotesk';margin-bottom:2px}
+.banner span{font-size:var(--t-sm);color:var(--muted)}
+
+/* ---- table ---- */
+.tbl{width:100%;border-collapse:collapse;font-size:var(--t-sm)}
+.tbl th{text-align:left;font-family:'JetBrains Mono';font-size:var(--t-xs);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:0 var(--s-3) var(--s-3)}
+.tbl td{padding:var(--s-3);border-top:1px solid var(--line)}
+.tbl tr:hover td,.tbl tbody tr:hover td{background:var(--surface-2)}
+
+/* ---- tooltip ---- */
+.tip{position:relative;display:inline-flex}
+.tip .bubble{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(4px);background:var(--surface-3);border:1px solid var(--line-2);color:var(--text);font-size:var(--t-xs);white-space:nowrap;padding:6px 10px;border-radius:var(--r-xs);opacity:0;pointer-events:none;transition:opacity var(--dur-2) var(--ease),transform var(--dur-2) var(--ease);box-shadow:var(--e-2)}
+.tip:hover .bubble,.tip:focus-within .bubble{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---- dialog ---- */
+.dialog-demo{border:1px solid var(--line-2);border-radius:var(--r-lg);background:var(--surface);box-shadow:var(--e-3);max-width:420px;overflow:hidden}
+.dialog-demo .hd{padding:var(--s-5) var(--s-5) 0}
+.dialog-demo .bd{padding:var(--s-4) var(--s-5) var(--s-5)}
+.dialog-demo h3{font-size:var(--t-lg);margin-bottom:6px}
+.dialog-demo p{color:var(--muted);font-size:var(--t-sm);margin:0}
+.dialog-demo .ft{display:flex;gap:var(--s-3);justify-content:flex-end;padding:0 var(--s-5) var(--s-5)}
+
+/* ---- dropdown ---- */
+.menu{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-sm);box-shadow:var(--e-3);padding:6px;max-width:240px}
+.menu button{display:flex;width:100%;align-items:center;gap:10px;background:none;border:0;color:var(--text);font-family:'Inter';font-size:var(--t-sm);padding:9px 10px;border-radius:var(--r-xs);cursor:pointer;text-align:left}
+.menu button:hover{background:var(--surface-2)}
+
+/* ---- toc / nav ---- */
+.ds-nav{position:sticky;top:0;z-index:20;background:rgba(8,8,15,.8);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.ds-nav .wrap{display:flex;align-items:center;gap:var(--s-5);height:60px;overflow-x:auto}
+.ds-nav .logo{display:inline-flex;align-items:center;gap:9px;font-family:'Space Grotesk';font-weight:700;font-size:var(--t-md);flex:0 0 auto}
+.ds-nav .logo .m{width:22px;height:26px;border-radius:5px;background:var(--grad);box-shadow:var(--e-glow)}
+.ds-nav a{color:var(--muted);font-size:var(--t-sm);font-weight:500;white-space:nowrap;transition:color var(--dur-2)}
+.ds-nav a:hover{color:var(--text)}
+
+@media (max-width:820px){ .g4{grid-template-columns:repeat(2,1fr)} .g3{grid-template-columns:repeat(2,1fr)} }
+@media (max-width:560px){ .g4,.g3,.g2{grid-template-columns:1fr} .block h2{font-size:var(--t-xl)} .ds-hero{padding:var(--s-7) 0 var(--s-6)} }
+@media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important;scroll-behavior:auto!important} }
+</style>
+</head>
+<body>
+
+<nav class="ds-nav" aria-label="Design system sections">
+  <div class="wrap">
+    <span class="logo"><span class="m" aria-hidden="true"></span> SnipoClips</span>
+    <a href="#foundations">Foundations</a>
+    <a href="#buttons">Buttons</a>
+    <a href="#inputs">Inputs</a>
+    <a href="#cards">Cards</a>
+    <a href="#status">Status</a>
+    <a href="#processing">Processing</a>
+    <a href="#states">States</a>
+    <a href="#components">Components</a>
+  </div>
+</nav>
+
+<header class="ds-hero">
+  <div class="wrap">
+    <span class="eyebrow">Design system · v1</span>
+    <h1 style="font-size:var(--t-4xl);margin:16px 0 14px;max-width:760px">The building blocks behind <span class="grad-text">SnipoClips</span>.</h1>
+    <p style="color:var(--muted);font-size:var(--t-lg);max-width:600px">One token system, reused across the landing page and studio. Change a value here and the whole product moves with it — so every screen feels like the same premium product.</p>
+    <div class="row" style="margin-top:28px">
+      <span class="tc">00:00</span><div class="scrub" style="width:280px"></div><span class="tc">58:24</span>
+    </div>
+  </div>
+</header>
+
+<!-- FOUNDATIONS -->
+<section class="block" id="foundations">
+  <div class="wrap">
+    <span class="eyebrow">01 · Foundations</span>
+    <h2>Color</h2>
+    <p class="lead">A dark canvas keeps video thumbnails and captions the loudest thing on screen. The tri-tone gradient is the brand's one indulgence — used on primary actions and key words, never as background noise.</p>
+    <div class="grid g4" style="margin-bottom:var(--s-6)">
+      <div class="swatch"><div class="chip" style="background:var(--grad)"></div><div class="meta"><b>Brand gradient</b><code>#3FA9FF → #7B5CFF → #FF3DBE</code></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--bg)"></div><div class="meta"><b>Canvas</b><code>#08080F</code></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--surface)"></div><div class="meta"><b>Surface</b><code>#13131F</code></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--surface-3)"></div><div class="meta"><b>Surface raised</b><code>#1E1E2E</code></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--ok)"></div><div class="meta"><b>Success</b><code>#37D399</code></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--warn)"></div><div class="meta"><b>Warning</b><code>#F5B544</code></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--err)"></div><div class="meta"><b>Error</b><code>#FF5C7A</code></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--info)"></div><div class="meta"><b>Info</b><code>#3FA9FF</code></div></div>
+    </div>
+
+    <h2 style="margin-top:var(--s-7)">Type</h2>
+    <p class="lead">Space Grotesk for display (characterful, geometric), Inter for reading, and JetBrains Mono for anything that behaves like a timecode — clip lengths, scores, processing ETAs. Numbers that read like a video scrubber tie every screen back to the product.</p>
+    <div class="spec"><span class="tag">display / 4xl · Space Grotesk 700</span><div class="display" style="font-size:var(--t-3xl)">Long videos in, short clips out</div></div>
+    <div class="spec"><span class="tag">heading / 2xl · Space Grotesk 600</span><div class="display" style="font-size:var(--t-2xl)">Find the gold in every upload</div></div>
+    <div class="spec"><span class="tag">body / base · Inter 400</span><div style="font-size:var(--t-base);color:var(--muted)">The AI watches your full video, picks the moments worth posting, and returns captioned vertical clips ready for Reels, Shorts and TikTok.</div></div>
+    <div class="spec"><span class="tag">data / mono · JetBrains Mono 600</span><div class="mono" style="font-size:var(--t-md)">00:14 – 00:42 &nbsp; score 92 &nbsp; 1080p &nbsp; hi-IN</div></div>
+
+    <h2 style="margin-top:var(--s-7)">Radius, elevation &amp; spacing</h2>
+    <div class="grid g3" style="margin-top:var(--s-4)">
+      <div class="card" style="box-shadow:var(--e-1)"><h3 style="font-size:var(--t-md)">Elevation 1</h3><p>Hairline lift for inputs &amp; chips.</p></div>
+      <div class="card" style="box-shadow:var(--e-2)"><h3 style="font-size:var(--t-md)">Elevation 2</h3><p>Cards on hover, popovers.</p></div>
+      <div class="card" style="box-shadow:var(--e-3)"><h3 style="font-size:var(--t-md)">Elevation 3</h3><p>Dialogs &amp; the hero preview.</p></div>
+    </div>
+    <div class="row" style="margin-top:var(--s-4)">
+      <span class="tc">radius 8</span><span class="tc">12</span><span class="tc">16</span><span class="tc">20</span><span class="tc">28</span><span class="tc">pill</span>
+      <span style="width:1px;height:20px;background:var(--line-2);margin:0 8px"></span>
+      <span class="tc">space 4·8·12·16·24·32·48·64·96</span>
+    </div>
+  </div>
+</section>
+
+<!-- BUTTONS -->
+<section class="block" id="buttons">
+  <div class="wrap">
+    <span class="eyebrow">02 · Actions</span>
+    <h2>Buttons</h2>
+    <p class="lead">One primary action per view, wearing the gradient. Everything else steps back so the eye goes to “Start free” or “Generate clips”.</p>
+    <div class="row">
+      <button class="btn btn-primary">Generate clips</button>
+      <button class="btn btn-ghost">See sample results</button>
+      <button class="btn btn-subtle">Cancel</button>
+      <button class="btn btn-primary btn-lg">Start free — no card</button>
+      <button class="btn-icon" aria-label="More"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>
+      <button class="btn btn-primary" disabled>Uploading…</button>
+    </div>
+  </div>
+</section>
+
+<!-- INPUTS -->
+<section class="block" id="inputs">
+  <div class="wrap">
+    <span class="eyebrow">03 · Forms</span>
+    <h2>Inputs</h2>
+    <p class="lead">Calm by default, a violet focus ring on interaction. Labels say what happens; hints remove doubt.</p>
+    <div class="grid g2">
+      <div>
+        <div class="field"><label for="d1">Paste a video link</label><input id="d1" class="input" placeholder="youtube.com/watch?v=…"><div class="hint">YouTube, Drive, or a direct MP4. Up to 180 minutes.</div></div>
+        <div class="field"><label for="d2">Spoken language</label>
+          <select id="d2" class="select"><option>Auto-detect</option><option>Hindi / Hinglish</option><option>English</option></select></div>
+      </div>
+      <div class="field"><label for="d3">Caption &amp; hook</label><textarea id="d3" class="textarea" rows="5" placeholder="Optional: tell the AI what to look for…"></textarea><div class="hint">Leave blank to let the AI choose the best moments.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CARDS -->
+<section class="block" id="cards">
+  <div class="wrap">
+    <span class="eyebrow">04 · Surfaces</span>
+    <h2>Cards</h2>
+    <p class="lead">Feature cards, clip cards, and pricing all share one shell — border, radius, hover lift — so density changes without the look changing.</p>
+    <div class="grid g3">
+      <div class="card"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="url(#g)" stroke-width="2"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#3FA9FF"/><stop offset="1" stop-color="#FF3DBE"/></linearGradient></defs><path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"/></svg></div><h3>AI highlights</h3><p>Finds the moments most likely to stop the scroll — even in Hindi &amp; Hinglish.</p></div>
+      <div class="card"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3FA9FF" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M9 10.5a2 2 0 100 3M15.5 10.5a2 2 0 100 3"/></svg></div><h3>Karaoke captions</h3><p>Word-by-word highlight, correct across Devanagari and Latin scripts.</p></div>
+      <div class="card"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7B5CFF" stroke-width="2"><path d="M4 7h16M4 12h10M4 17h7"/><path d="M17 13l4 4M21 13l-4 4"/></svg></div><h3>One-click Shorts</h3><p>Publish straight to YouTube Shorts without leaving the studio.</p></div>
+    </div>
+
+    <h3 style="font-size:var(--t-lg);margin:var(--s-6) 0 var(--s-4)">Clip card</h3>
+    <div class="grid g4">
+      <div class="clipcard"><div class="frame"><span class="score">92</span><div class="cap">This one habit <span class="hl">changed everything</span></div></div><div class="info"><span class="tc">00:14–00:42</span><span class="badge badge-muted">9:16</span></div></div>
+      <div class="clipcard"><div class="frame"><span class="score">88</span><div class="cap">सबसे बड़ी <span class="hl">ग़लती</span></div></div><div class="info"><span class="tc">02:03–02:35</span><span class="badge badge-muted">hi-IN</span></div></div>
+      <div class="clipcard"><div class="frame"><span class="score">81</span><div class="cap">Nobody tells you <span class="hl">this</span></div></div><div class="info"><span class="tc">05:20–05:51</span><span class="badge badge-muted">1080p</span></div></div>
+      <div class="clipcard"><div class="frame"><div class="cap" style="opacity:.5">Rendering…</div></div><div class="info"><span class="sk" style="width:70px;height:12px"></span><span class="sk" style="width:34px;height:12px"></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- STATUS -->
+<section class="block" id="status">
+  <div class="wrap">
+    <span class="eyebrow">05 · Signals</span>
+    <h2>Badges, chips &amp; meters</h2>
+    <p class="lead">Job states use color plus a word — never color alone — so status survives colour-blindness and glare.</p>
+    <div class="row" style="margin-bottom:var(--s-5)">
+      <span class="badge badge-grad">Most popular</span>
+      <span class="badge">Pro</span>
+      <span class="badge badge-muted">Free</span>
+    </div>
+    <div class="row" style="margin-bottom:var(--s-6)">
+      <span class="chip chip-info">Transcribing</span>
+      <span class="chip chip-info">Rendering</span>
+      <span class="chip chip-ok">Ready</span>
+      <span class="chip chip-warn">Queued</span>
+      <span class="chip chip-err">Failed</span>
+    </div>
+    <div style="max-width:420px">
+      <div class="row" style="justify-content:space-between;margin-bottom:8px"><span style="font-size:var(--t-sm);font-weight:600">Monthly minutes</span><span class="tc">640 / 900</span></div>
+      <div class="meter"><i style="width:71%"></i></div>
+    </div>
+  </div>
+</section>
+
+<!-- PROCESSING -->
+<section class="block" id="processing">
+  <div class="wrap">
+    <span class="eyebrow">06 · Processing</span>
+    <h2>The waiting experience</h2>
+    <p class="lead">Users wait a few minutes per video. The timeline turns that dead time into visible progress — each real pipeline stage, with a live ETA — instead of a spinner.</p>
+    <div class="card" style="max-width:520px">
+      <div class="timeline">
+        <div class="step done"><span class="dot">✓</span><span class="lbl">Upload complete</span><span class="eta">0:12</span></div>
+        <div class="step done"><span class="dot">✓</span><span class="lbl">Transcribing (hi-IN)</span><span class="eta">1:48</span></div>
+        <div class="step active"><span class="dot"></span><span class="lbl">Finding highlights</span><div class="bar scrub"></div></div>
+        <div class="step pending"><span class="dot">4</span><span class="lbl">Rendering captions</span><span class="eta">~2:30</span></div>
+        <div class="step pending"><span class="dot">5</span><span class="lbl">Exporting clips</span><span class="eta">~0:40</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATES -->
+<section class="block" id="states">
+  <div class="wrap">
+    <span class="eyebrow">07 · Empty · Loading · Feedback</span>
+    <h2>States</h2>
+    <p class="lead">Every empty screen is an invitation to act; every error says what happened and the way out — in the product's voice, no apologies.</p>
+    <div class="grid g2">
+      <div class="state">
+        <div class="em"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="url(#g2)" stroke-width="2"><defs><linearGradient id="g2" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#3FA9FF"/><stop offset="1" stop-color="#FF3DBE"/></linearGradient></defs><path d="M12 5v14M5 12h14"/></svg></div>
+        <h4>No clips yet</h4>
+        <p>Upload a video or paste a link — your first clips land here in a few minutes.</p>
+        <button class="btn btn-primary">Upload a video</button>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:var(--s-3)">
+          <div class="sk" style="height:14px;width:60%;margin-bottom:10px"></div>
+          <div class="sk" style="height:10px;width:90%;margin-bottom:6px"></div>
+          <div class="sk" style="height:10px;width:75%"></div>
+        </div>
+        <div class="banner banner-ok" style="margin-bottom:var(--s-3)"><span class="bi">✓</span><div><b>Uploaded to YouTube</b><span>“This one habit” is live on your channel.</span></div></div>
+        <div class="banner banner-err"><span class="bi">!</span><div><b>Upload didn't finish</b><span>Reconnect your YouTube account and retry — nothing was lost.</span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPONENTS -->
+<section class="block" id="components">
+  <div class="wrap">
+    <span class="eyebrow">08 · Overlays &amp; data</span>
+    <h2>Components</h2>
+    <div class="grid g2" style="margin-bottom:var(--s-6)">
+      <div>
+        <h3 style="font-size:var(--t-lg);margin-bottom:var(--s-4)">Dialog</h3>
+        <div class="dialog-demo">
+          <div class="hd"><h3>Upload to Shorts</h3><p>Publishing “This one habit changed everything” to your channel.</p></div>
+          <div class="bd">
+            <div class="field" style="margin:0"><label>Visibility</label><select class="select"><option>Private</option><option>Unlisted</option><option>Public</option></select></div>
+          </div>
+          <div class="ft"><button class="btn btn-subtle">Cancel</button><button class="btn btn-primary">Upload</button></div>
+        </div>
+      </div>
+      <div>
+        <h3 style="font-size:var(--t-lg);margin-bottom:var(--s-4)">Tooltip &amp; menu</h3>
+        <div class="row" style="align-items:flex-start;gap:var(--s-6)">
+          <span class="tip" tabindex="0"><button class="btn btn-ghost">Virality score <span aria-hidden="true">ⓘ</span></button><span class="bubble" role="tooltip">How likely the clip is to stop the scroll (0–100).</span></span>
+          <div class="menu">
+            <button>⬇ Download 1080p</button>
+            <button>✎ Edit captions</button>
+            <button>▶ Upload to Shorts</button>
+            <button style="color:var(--err)">🗑 Delete clip</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="font-size:var(--t-lg);margin-bottom:var(--s-4)">Table</h3>
+    <div class="card" style="padding:var(--s-5)">
+      <table class="tbl">
+        <thead><tr><th>Clip</th><th>Length</th><th>Score</th><th>Language</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>This one habit changed everything</td><td class="mono">00:28</td><td class="mono">92</td><td>hi-IN</td><td><span class="chip chip-ok">Ready</span></td></tr>
+          <tr><td>Nobody tells you this</td><td class="mono">00:31</td><td class="mono">81</td><td>en</td><td><span class="chip chip-info">Rendering</span></td></tr>
+          <tr><td>सबसे बड़ी ग़लती</td><td class="mono">00:32</td><td class="mono">88</td><td>hi-IN</td><td><span class="chip chip-warn">Queued</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<footer style="border-top:1px solid var(--line);padding:var(--s-7) 0;color:var(--muted-2)">
+  <div class="wrap row" style="justify-content:space-between">
+    <span class="mono" style="font-size:var(--t-xs)">SnipoClips · design system v1</span>
+    <span style="font-size:var(--t-xs)">Tokens in <code class="mono">:root</code> — reused by the landing page &amp; studio.</span>
+  </div>
+</footer>
+
+</body>
+</html>
