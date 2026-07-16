@@ -1,0 +1,34 @@
+# --- dependencies & secrets ---
+node_modules
+npm-debug.log*
+.env
+.env.*
+!.env.example
+
+# --- dev / VCS / editor cruft ---
+.git
+.gitignore
+.vscode
+.idea
+*.log
+
+# --- backups & build artifacts (never ship these) ---
+*.bak
+*.orig
+*.tmp
+*~
+dist
+build
+coverage
+.cache
+
+# --- runtime data & generated output ---
+data
+public/test-clips
+tmp
+*.mp4
+*.mp3
+
+# --- docs that don't belong in the image ---
+*.md
+!README.md

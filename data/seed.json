@@ -1,0 +1,229 @@
+{
+  "updatedAt": "2026-06-16",
+  "kpis": {
+    "mrr": 3926,
+    "mrr_prev": 3912,
+    "active_users": 2185,
+    "active_users_prev": 1947,
+    "api_calls_month": 40546,
+    "api_cost_month": 767.5,
+    "api_cost_prev": 640.2,
+    "paid_conversion": 800,
+    "churn_pct": 3.4,
+    "clips_generated": 128430
+  },
+  "series": {
+    "months": [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec"
+    ],
+    "revenue": [
+      1977,
+      1962,
+      2348,
+      2363,
+      2808,
+      2869,
+      3195,
+      3426,
+      3417,
+      3805,
+      3912,
+      3926
+    ],
+    "users": [
+      314,
+      399,
+      529,
+      677,
+      852,
+      1027,
+      1189,
+      1348,
+      1580,
+      1770,
+      1947,
+      2185
+    ],
+    "api_calls": [
+      5715,
+      9533,
+      9657,
+      15447,
+      20116,
+      20772,
+      24638,
+      25366,
+      32788,
+      39453,
+      47965,
+      40546
+    ],
+    "organic": [
+      1181,
+      1578,
+      1235,
+      1834,
+      1809,
+      1506,
+      1779,
+      2129,
+      2130,
+      2367,
+      2470,
+      2453
+    ],
+    "paid": [
+      950,
+      879,
+      1103,
+      1173,
+      1285,
+      1313,
+      1460,
+      1429,
+      1464,
+      1590,
+      2191,
+      1986
+    ]
+  },
+  "plans": {
+    "Free": 1820,
+    "Creator": 612,
+    "Pro": 188
+  },
+  "channels": {
+    "Organic search": 38,
+    "Instagram": 21,
+    "Facebook ads": 17,
+    "YouTube": 12,
+    "Referral": 7,
+    "Direct": 5
+  },
+  "api_by_model": {
+    "claude-opus-4-8": {
+      "calls": 4120,
+      "tokens": 9120000,
+      "cost_usd": 412.4
+    },
+    "claude-sonnet-4-6": {
+      "calls": 18840,
+      "tokens": 24300000,
+      "cost_usd": 291.6
+    },
+    "claude-haiku-4-5": {
+      "calls": 39200,
+      "tokens": 12700000,
+      "cost_usd": 63.5
+    }
+  },
+  "recent_users": [
+    {
+      "name": "Aarav Sharma",
+      "email": "aarav.sharma@example.com",
+      "plan": "Free",
+      "clips": 122,
+      "joined": "2026-06-10",
+      "source": "YouTube"
+    },
+    {
+      "name": "Sofia Reyes",
+      "email": "sofia.reyes@example.com",
+      "plan": "Creator",
+      "clips": 235,
+      "joined": "2026-05-07",
+      "source": "Facebook ads"
+    },
+    {
+      "name": "Karan Desai",
+      "email": "karan.desai@example.com",
+      "plan": "Free",
+      "clips": 192,
+      "joined": "2026-05-25",
+      "source": "Instagram"
+    },
+    {
+      "name": "Mia Chen",
+      "email": "mia.chen@example.com",
+      "plan": "Free",
+      "clips": 139,
+      "joined": "2026-06-12",
+      "source": "Referral"
+    },
+    {
+      "name": "Diego Lopez",
+      "email": "diego.lopez@example.com",
+      "plan": "Free",
+      "clips": 90,
+      "joined": "2026-05-13",
+      "source": "Direct"
+    },
+    {
+      "name": "Priya Nair",
+      "email": "priya.nair@example.com",
+      "plan": "Free",
+      "clips": 86,
+      "joined": "2026-05-18",
+      "source": "YouTube"
+    },
+    {
+      "name": "Liam Walsh",
+      "email": "liam.walsh@example.com",
+      "plan": "Creator",
+      "clips": 330,
+      "joined": "2026-05-12",
+      "source": "Instagram"
+    },
+    {
+      "name": "Ananya Rao",
+      "email": "ananya.rao@example.com",
+      "plan": "Free",
+      "clips": 169,
+      "joined": "2026-06-13",
+      "source": "Instagram"
+    },
+    {
+      "name": "Noah Kim",
+      "email": "noah.kim@example.com",
+      "plan": "Free",
+      "clips": 415,
+      "joined": "2026-05-27",
+      "source": "YouTube"
+    },
+    {
+      "name": "Zara Khan",
+      "email": "zara.khan@example.com",
+      "plan": "Creator",
+      "clips": 36,
+      "joined": "2026-06-03",
+      "source": "Referral"
+    },
+    {
+      "name": "Lucas Brandt",
+      "email": "lucas.brandt@example.com",
+      "plan": "Free",
+      "clips": 164,
+      "joined": "2026-06-03",
+      "source": "Direct"
+    },
+    {
+      "name": "Ishaan Mehta",
+      "email": "ishaan.mehta@example.com",
+      "plan": "Pro",
+      "clips": 205,
+      "joined": "2026-05-18",
+      "source": "Instagram"
+    }
+  ]
+}
