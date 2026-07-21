@@ -129,10 +129,15 @@ app.use('/api', youtubeRouter);
 app.post('/admin/login', loginLimiter,
   body('email').isEmail(), body('password').isLength({ min: 1 }),
   (req, res) => {
-    if (!validationResult(req).isEmpty()) return res.status(400).json({ error: 'Invalid input' });
-    if (!checkAdmin(req.body.email, req.body.password)) return res.status(401).json({ error: 'Wrong email or password' });
-    res.cookie('sc_admin', issueToken(req.body.email), COOKIE_OPTS);
-    res.json({ ok: true });
+    try {
+      if (!validationResult(req).isEmpty()) return res.status(400).json({ error: 'Invalid input' });
+      if (!checkAdmin(req.body.email, req.body.password)) return res.status(401).json({ error: 'Wrong email or password' });
+      res.cookie('sc_admin', issueToken(req.body.email), COOKIE_OPTS);
+      res.json({ ok: true });
+    } catch (e) {
+      console.error('[admin/login] error: ' + (e.message || e));
+      res.status(500).json({ error: 'Login error — check server logs' });
+    }
   }
 );
 app.post('/admin/logout', (req, res) => { res.clearCookie('sc_admin', { path: '/' }); res.json({ ok: true }); });
@@ -210,6 +215,7 @@ if (process.env.DEV_TEST_MODE === '1' && process.env.NODE_ENV !== 'production') 
 app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
 app.get('/app', (req, res) => res.sendFile(path.join(__dirname, 'public/app/index.html')));
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public/app/login.html')));
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/dashboard.html')));
 app.get('/health', (req, res) => res.json({ ok: true, ts: Date.now() }));
 
 app.use((req, res) => res.status(404).send('Not found'));
