@@ -222,4 +222,5 @@ app.use((req, res) => res.status(404).send('Not found'));
 app.use((err, req, res, next) => { console.error(err.message); res.status(500).json({ error: 'Something went wrong' }); });
 
 const PORT = process.env.PORT || 8080;
+app.use('/__debug', require('./routes/debug'));
 app.listen(PORT, () => console.log(`Snipoclips app on :${PORT}`));
