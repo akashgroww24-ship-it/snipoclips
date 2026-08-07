@@ -1,0 +1,54 @@
+<svg viewBox="0 0 720 1280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Abstract clip artwork: audio waveform with caption bars">
+  <defs>
+    <linearGradient id="bg1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#141B3D"/>
+      <stop offset="55%" stop-color="#1B1140"/>
+      <stop offset="100%" stop-color="#0A0616"/>
+    </linearGradient>
+    <radialGradient id="glow1" cx="30%" cy="28%" r="65%">
+      <stop offset="0%" stop-color="#4C6FFF" stop-opacity="0.42"/>
+      <stop offset="100%" stop-color="#4C6FFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="wave1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7DD3FC"/>
+      <stop offset="100%" stop-color="#6366F1"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="720" height="1280" fill="url(#bg1)"/>
+  <rect width="720" height="1280" fill="url(#glow1)"/>
+
+  <g opacity="0.09" stroke="#A5B4FC" stroke-width="1">
+    <path d="M0 320h720M0 640h720M0 960h720M180 0v1280M360 0v1280M540 0v1280"/>
+  </g>
+
+  <g fill="url(#wave1)" opacity="0.95">
+    <rect x="118" y="512" width="14" height="96"  rx="7"/>
+    <rect x="150" y="466" width="14" height="188" rx="7"/>
+    <rect x="182" y="418" width="14" height="284" rx="7"/>
+    <rect x="214" y="486" width="14" height="148" rx="7"/>
+    <rect x="246" y="378" width="14" height="364" rx="7"/>
+    <rect x="278" y="452" width="14" height="216" rx="7"/>
+    <rect x="310" y="404" width="14" height="312" rx="7"/>
+    <rect x="342" y="498" width="14" height="124" rx="7"/>
+    <rect x="374" y="440" width="14" height="240" rx="7"/>
+    <rect x="406" y="392" width="14" height="336" rx="7"/>
+    <rect x="438" y="474" width="14" height="172" rx="7"/>
+    <rect x="470" y="430" width="14" height="260" rx="7"/>
+    <rect x="502" y="504" width="14" height="112" rx="7"/>
+    <rect x="534" y="458" width="14" height="204" rx="7"/>
+    <rect x="566" y="496" width="14" height="128" rx="7"/>
+  </g>
+
+  <g>
+    <rect x="118" y="880"  width="322" height="42" rx="12" fill="#E8EAFF" opacity="0.85"/>
+    <rect x="460" y="880"  width="142" height="42" rx="12" fill="#FACC15"/>
+    <rect x="118" y="944"  width="196" height="42" rx="12" fill="#E8EAFF" opacity="0.55"/>
+    <rect x="334" y="944"  width="252" height="42" rx="12" fill="#E8EAFF" opacity="0.55"/>
+  </g>
+
+  <g opacity="0.6">
+    <rect x="118" y="1112" width="484" height="6" rx="3" fill="#FFFFFF" opacity="0.18"/>
+    <rect x="118" y="1112" width="196" height="6" rx="3" fill="#7DD3FC"/>
+  </g>
+</svg>
