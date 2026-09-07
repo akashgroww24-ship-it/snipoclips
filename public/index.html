@@ -254,8 +254,11 @@
   .ba-card .tag{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:8px}
   .ba-card.before .frame{aspect-ratio:16/9;border-radius:12px;background:linear-gradient(120deg,#1c2238,#2a2030);position:relative;overflow:hidden;display:grid;place-items:center}
   .ba-card .runtime{position:absolute;bottom:10px;right:12px;font-size:12px;font-weight:600;background:rgba(0,0,0,.5);padding:4px 8px;border-radius:6px}
-  .ba-after .row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-  .ba-after .mini{aspect-ratio:9/16;border-radius:12px;position:relative;overflow:hidden;border:1px solid var(--line)}
+  .ba-after .row{display:flex;gap:12px}
+  .ba-after .row>.mini{flex:1 1 0;min-width:0}
+  @supports(display:grid){.ba-after .row{display:grid;grid-template-columns:repeat(3,1fr)}.ba-after .row>.mini{flex:initial}}
+  .ba-after .mini{height:0;padding-bottom:177%;border-radius:12px;position:relative;overflow:hidden;border:1px solid var(--line)}
+  @supports(aspect-ratio:1/1){.ba-after .mini{height:auto;padding-bottom:0;aspect-ratio:9/16}}
   .ba-after .mini:nth-child(1){background:linear-gradient(160deg,#243a66,#3a2a5e)}
   .ba-after .mini:nth-child(2){background:linear-gradient(160deg,#3a2a5e,#5e2a52)}
   .ba-after .mini:nth-child(3){background:linear-gradient(160deg,#5e2a52,#662a3e)}
@@ -542,6 +545,46 @@ footer{background:rgba(18,12,36,.6)!important;border-top:1px solid rgba(236,72,1
 .vc .ph::after{background:linear-gradient(180deg,rgba(11,8,25,0) 60%,rgba(11,8,25,.25) 100%)}
 .vc .bar{display:none}
 
+
+/* ===== RESULTS mini clips — same style as hero, different motion ===== */
+.ba-after .mini{background:#12091f!important;border:1px solid rgba(236,72,153,.20)!important;
+  box-shadow:0 10px 26px rgba(0,0,0,.5);cursor:pointer;
+  transition:transform .5s cubic-bezier(.22,.9,.3,1),box-shadow .5s ease,border-color .35s ease}
+.ba-after .mini img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.ba-after .mini b{display:none}
+.ba-after .mini i{background:rgba(11,8,25,.85)!important;border:1px solid rgba(196,181,253,.5);
+  color:#C4B5FD!important;box-shadow:0 0 10px rgba(196,181,253,.3)}
+
+/* motion: cards fan out and lift in sequence (different from hero's zoom) */
+.ba-after .row{perspective:1000px}
+.ba-after .mini:nth-child(1){transform:rotate(-2.5deg) translateY(4px)}
+.ba-after .mini:nth-child(2){transform:rotate(0deg) translateY(-4px);z-index:2}
+.ba-after .mini:nth-child(3){transform:rotate(2.5deg) translateY(4px)}
+.ba-after .row:hover .mini:nth-child(1){transform:rotate(-5deg) translateY(-6px) translateX(-6px)}
+.ba-after .row:hover .mini:nth-child(2){transform:rotate(0deg) translateY(-16px) scale(1.04)}
+.ba-after .row:hover .mini:nth-child(3){transform:rotate(5deg) translateY(-6px) translateX(6px)}
+.ba-after .mini:hover{border-color:rgba(236,72,153,.6)!important;
+  box-shadow:0 18px 44px rgba(236,72,153,.32);z-index:3}
+
+/* gentle idle float, staggered — signals "clips arriving one by one" */
+@keyframes clipFloat{0%,100%{translate:0 0}50%{translate:0 -7px}}
+.ba-after .mini:nth-child(1){animation:clipFloat 5.2s ease-in-out infinite}
+.ba-after .mini:nth-child(2){animation:clipFloat 5.2s ease-in-out .5s infinite}
+.ba-after .mini:nth-child(3){animation:clipFloat 5.2s ease-in-out 1s infinite}
+.ba-after .row:hover .mini{animation-play-state:paused}
+
+/* "before" frame gets a scan line sweeping — the AI reading the long video */
+.ba-card.before .frame{position:relative;overflow:hidden}
+.ba-card.before .frame::after{content:'';position:absolute;top:0;bottom:0;width:3px;
+  background:linear-gradient(180deg,transparent,#EC4899,transparent);
+  box-shadow:0 0 18px rgba(236,72,153,.9);animation:scanSweep 4.5s ease-in-out infinite}
+@keyframes scanSweep{0%{left:-2%;opacity:0}10%{opacity:1}90%{opacity:1}100%{left:102%;opacity:0}}
+
+@media(prefers-reduced-motion:reduce){
+  .ba-after .mini,.ba-card.before .frame::after{animation:none!important}
+  .ba-after .row:hover .mini{transform:none!important}
+}
+
 </style>
 </head>
 <body>
@@ -730,9 +773,9 @@ footer{background:rgba(18,12,36,.6)!important;border-top:1px solid rgba(236,72,1
         <div class="ba-card ba-after reveal">
           <div class="tag"><span class="dot"></span> After — Snipoclip</div>
           <div class="row">
-            <div class="mini"><i>9:16</i><b>"This changed everything"</b></div>
-            <div class="mini"><i>9:16</i><b>The ₹0 growth hack</b></div>
-            <div class="mini"><i>9:16</i><b>Nobody talks about this</b></div>
+            <div class="mini"><img src="/clip-4.jpg" alt="Vertical captioned clip"><i>9:16</i></div>
+            <div class="mini"><img src="/clip-5.jpg" alt="Vertical captioned clip"><i>9:16</i></div>
+            <div class="mini"><img src="/clip-6.jpg" alt="Vertical captioned clip"><i>9:16</i></div>
           </div>
           <p style="color:var(--muted);font-size:14.5px;margin:16px 0 0">Vertical, captioned and ready for Reels, Shorts &amp; TikTok.</p>
         </div>
