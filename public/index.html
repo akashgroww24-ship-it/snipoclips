@@ -498,6 +498,50 @@ footer{background:rgba(18,12,36,.6)!important;border-top:1px solid rgba(236,72,1
 .q summary::after{color:#EC4899}
 .stars{color:#EC4899}
 
+
+.vc .ph .thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;z-index:0}
+.vc .ph .sil{display:none}
+.vc .ph .status,.vc .ph .cap,.vc .ph .bar,.vc .ph .playhint{z-index:3}
+.vc .ph::after{content:'';position:absolute;inset:0;z-index:1;
+  background:linear-gradient(180deg,rgba(11,8,25,.05) 40%,rgba(11,8,25,.72) 100%)}
+
+
+/* ===== INTERACTIVE CLIP CARDS ===== */
+.vc{cursor:pointer}
+.vc .ph .thumb{transition:transform 5s ease-out, filter .4s ease}
+.vc:hover .ph .thumb,.vc.playing .ph .thumb{transform:scale(1.12);filter:saturate(1.15) brightness(1.05)}
+/* caption: word-by-word karaoke, built by JS */
+.vc .cap{display:flex;flex-wrap:wrap;justify-content:center;gap:4px}
+.vc .cap w{opacity:.32;transition:opacity .18s ease,color .18s ease}
+.vc .cap w.lit{opacity:1;color:#fff;text-shadow:0 0 12px rgba(236,72,153,.9)}
+/* playhead scrubs while playing */
+.vc .bar i{transition:none}
+.vc .bar .head{position:absolute;top:50%;width:9px;height:9px;border-radius:50%;
+  background:#fff;box-shadow:0 0 10px #EC4899;transform:translate(-50%,-50%);opacity:0;transition:opacity .2s}
+.vc.playing .bar .head{opacity:1}
+/* live badge + timer */
+.vc .timer{position:absolute;top:14px;right:8px;z-index:4;font-size:10.5px;font-weight:700;
+  padding:3px 7px;border-radius:7px;background:rgba(11,8,25,.85);color:#F5F2FF;
+  border:1px solid rgba(255,255,255,.16);opacity:0;transition:opacity .25s}
+.vc.playing .timer,.vc:hover .timer{opacity:1}
+/* pause bars replace play arrow while playing */
+.vc.playing .playhint{opacity:1;transform:translate(-50%,-50%) scale(.85);background:rgba(11,8,25,.45)}
+.vc.playing .playhint svg{display:none}
+.vc.playing .playhint::after{content:'';width:11px;height:13px;
+  border-left:3.5px solid #fff;border-right:3.5px solid #fff}
+/* click-to-play ring */
+.vc.playing{border-color:rgba(236,72,153,.75);box-shadow:0 0 0 1px rgba(236,72,153,.4),0 14px 40px rgba(236,72,153,.3)}
+@media(prefers-reduced-motion:reduce){
+  .vc .ph .thumb{transition:none}
+  .vc:hover .ph .thumb,.vc.playing .ph .thumb{transform:none}
+}
+
+
+/* clip art now carries captions + status; hide duplicated overlays */
+.vc .cap,.vc .status,.vc .timer{display:none!important}
+.vc .ph::after{background:linear-gradient(180deg,rgba(11,8,25,0) 60%,rgba(11,8,25,.25) 100%)}
+.vc .bar{display:none}
+
 </style>
 </head>
 <body>
@@ -568,27 +612,27 @@ footer{background:rgba(18,12,36,.6)!important;border-top:1px solid rgba(236,72,1
           </div>
           <div class="hub-cards">
             <article class="vc o">
-              <div class="ph"><span class="playhint"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span><canvas></canvas>
+              <div class="ph"><img class="thumb" src="/clip-1.jpg" alt=""><span class="playhint"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span><canvas></canvas>
                 <span class="sil"><span class="head"></span><span class="body"></span></span>
-                <span class="status ready">Ready</span>
+                <span class="status ready">Ready</span><span class="timer">0:00</span>
                 <span class="cap">"This changed everything"</span>
-                <span class="bar"><i style="width:100%"></i></span>
+                <span class="bar"><i style="width:100%"></i><span class="head" style="left:100%"></span></span>
               </div>
             </article>
             <article class="vc y">
-              <div class="ph"><span class="playhint"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span><canvas></canvas>
+              <div class="ph"><img class="thumb" src="/clip-2.jpg" alt=""><span class="playhint"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span><canvas></canvas>
                 <span class="sil"><span class="head"></span><span class="body"></span></span>
-                <span class="status ready">Ready</span>
+                <span class="status ready">Ready</span><span class="timer">0:00</span>
                 <span class="cap">The ₹0 growth hack</span>
-                <span class="bar"><i style="width:100%"></i></span>
+                <span class="bar"><i style="width:100%"></i><span class="head" style="left:100%"></span></span>
               </div>
             </article>
             <article class="vc r">
-              <div class="ph"><span class="playhint"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span><canvas></canvas>
+              <div class="ph"><img class="thumb" src="/clip-3.jpg" alt=""><span class="playhint"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span><canvas></canvas>
                 <span class="sil"><span class="head"></span><span class="body"></span></span>
-                <span class="status proc">Rendering</span>
+                <span class="status proc">Rendering</span><span class="timer">0:00</span>
                 <span class="cap">Nobody talks about this</span>
-                <span class="bar"><i style="width:62%"></i></span>
+                <span class="bar"><i style="width:62%"></i><span class="head" style="left:62%"></span></span>
               </div>
             </article>
           </div>
@@ -1137,43 +1181,89 @@ footer{background:rgba(18,12,36,.6)!important;border-top:1px solid rgba(236,72,1
 <script src="/motion.js" defer></script>
 
 <script>
-/* Hover-play clips. Placeholder motion loops — not real footage.
-   To use REAL clips, put video URLs in CLIP_SRCS (left to right). */
+/* ============================================================
+   INTERACTIVE CLIP CARDS
+   Hover = preview. Click = play/pause.
+   Captions reveal word-by-word (karaoke), playhead scrubs,
+   timer counts. This demonstrates what the product does.
+   To use REAL clips, put video URLs in CLIP_SRCS.
+   ============================================================ */
 (function(){
-  var CLIP_SRCS=[null,null,null];
-  var cards=document.querySelectorAll('.hub-cards .vc');
-  Array.prototype.forEach.call(cards,function(card,idx){
-    var cv=card.querySelector('canvas'); if(!cv) return;
-    var src=CLIP_SRCS[idx];
+  var CLIP_SRCS = [null, null, null];   // e.g. ['/clips/a.mp4', ...]
+  var DUR = [45, 38, 41];               // seconds shown per card
+
+  document.querySelectorAll('.hub-cards .vc').forEach(function(card, idx){
+    var capEl  = card.querySelector('.cap');
+    var barFill= card.querySelector('.bar i');
+    var barHead= card.querySelector('.bar .head');
+    var timer  = card.querySelector('.timer');
+    var canvas = card.querySelector('canvas');
+    if(canvas) canvas.remove();          // no longer needed
+
+    // split caption into words for karaoke reveal
+    var text = (capEl.textContent||'').trim();
+    capEl.innerHTML = text.split(/\s+/).map(function(w){ return '<w>'+w+'</w>'; }).join(' ');
+    var words = capEl.querySelectorAll('w');
+
+    // optional real video
+    var video = null, src = CLIP_SRCS[idx];
     if(src){
-      var v=document.createElement('video');
-      v.src=src;v.muted=true;v.loop=true;v.playsInline=true;v.preload='metadata';
-      v.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .3s';
-      cv.parentNode.replaceChild(v,cv);
-      card.addEventListener('mouseenter',function(){v.style.opacity=1;v.play().catch(function(){})});
-      card.addEventListener('mouseleave',function(){v.style.opacity=0;v.pause();v.currentTime=0});
-      return;
+      video = document.createElement('video');
+      video.src=src; video.muted=true; video.loop=true; video.playsInline=true; video.preload='metadata';
+      video.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0';
+      var ph = card.querySelector('.ph');
+      var img = ph.querySelector('.thumb');
+      ph.insertBefore(video, img.nextSibling);
+      video.style.opacity=0; video.style.transition='opacity .3s';
     }
-    var ctx=cv.getContext('2d'),raf=null,t=0;
-    var tint=[[232,164,76],[120,90,180],[150,70,110]][idx]||[150,90,170];
-    function frame(){
-      t+=0.016;
-      var r=cv.getBoundingClientRect();cv.width=r.width;cv.height=r.height;
-      var w=cv.width,h=cv.height,g=ctx.createLinearGradient(0,0,w,h);
-      g.addColorStop(0,'rgba('+tint[0]+','+tint[1]+','+tint[2]+',.9)');
-      g.addColorStop(1,'rgba('+(tint[0]*0.5|0)+','+(tint[1]*0.5|0)+','+(tint[2]*0.7|0)+',.95)');
-      ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
-      for(var i=0;i<5;i++){
-        var x=(Math.sin(t*0.7+i*1.3)*0.5+0.5)*w,y=(Math.cos(t*0.5+i*2.1)*0.5+0.5)*h;
-        var rr=(20+i*8)*(0.8+0.2*Math.sin(t+i));
-        ctx.beginPath();ctx.arc(x,y,rr,0,7);
-        ctx.fillStyle='rgba(255,255,255,'+(0.04+0.03*Math.sin(t+i))+')';ctx.fill();
-      }
-      ctx.fillStyle='rgba(255,255,255,.05)';ctx.fillRect(0,(t*60)%h,w,2);
-      raf=requestAnimationFrame(frame);
+
+    var raf=null, t=0, playing=false, dur=DUR[idx]||40;
+
+    function fmt(sec){
+      var m=Math.floor(sec/60), s2=Math.floor(sec%60);
+      return m+':'+(s2<10?'0':'')+s2;
     }
-    card.addEventListener('mouseenter',function(){if(!raf)frame()});
-    card.addEventListener('mouseleave',function(){if(raf){cancelAnimationFrame(raf);raf=null;ctx.clearRect(0,0,cv.width,cv.height)}});
+    function paint(){
+      var p = t/dur;                      // 0..1
+      barFill.style.width=(p*100).toFixed(2)+'%';
+      if(barHead) barHead.style.left=(p*100).toFixed(2)+'%';
+      if(timer) timer.textContent=fmt(t)+' / '+fmt(dur);
+      var lit = Math.floor(p*words.length*1.35);
+      for(var i=0;i<words.length;i++) words[i].classList.toggle('lit', i<=lit);
+    }
+    function tick(){
+      t+=1/60; if(t>=dur){ t=0; }
+      paint();
+      raf=requestAnimationFrame(tick);
+    }
+    function start(){
+      if(playing) return; playing=true;
+      card.classList.add('playing');
+      if(video){ video.style.opacity=1; video.play().catch(function(){}); }
+      raf=requestAnimationFrame(tick);
+    }
+    function stop(reset){
+      playing=false; card.classList.remove('playing');
+      if(raf){ cancelAnimationFrame(raf); raf=null; }
+      if(video){ video.style.opacity=0; video.pause(); }
+      if(reset){ t=0; paint(); words.forEach(function(w){w.classList.remove('lit')}); }
+    }
+
+    // hover previews, click toggles a sustained play
+    card.addEventListener('mouseenter', function(){ if(!card.dataset.pinned) start(); });
+    card.addEventListener('mouseleave', function(){ if(!card.dataset.pinned) stop(true); });
+    card.addEventListener('click', function(){
+      if(card.dataset.pinned){ delete card.dataset.pinned; stop(true); }
+      else { card.dataset.pinned='1'; start(); }
+    });
+    card.setAttribute('tabindex','0');
+    card.setAttribute('role','button');
+    card.setAttribute('aria-label','Preview clip: '+text);
+    card.addEventListener('keydown', function(e){
+      if(e.key==='Enter'||e.key===' '){ e.preventDefault(); card.click(); }
+    });
+
+    paint();
   });
 })();
 </script>
