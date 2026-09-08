@@ -75,9 +75,44 @@ const PREVIEW=!!(window.__REFERENCE_FIXTURES__ && LOCAL);
 const FIX=PREVIEW?window.__REFERENCE_FIXTURES__:null;
 if(PREVIEW) console.info('[snipoclip] reference preview mode — fixture data, not real account data');
 
-async function api(path){
+/* ------------------------------------------------------------------
+   AUTH
+   The server (lib/requireUser.js) expects the Supabase access token as
+   `Authorization: Bearer <token>`. Cookies alone are NOT enough — the
+   Supabase session lives in browser storage, not in a cookie.
+   ------------------------------------------------------------------ */
+let _supa = null, _supaReady = null;
+
+async function getSupabase(){
+  if (_supa) return _supa;
+  if (_supaReady) return _supaReady;
+  _supaReady = (async () => {
+    if (!window.supabase || !window.supabase.createClient) return null;
+    const r = await fetch('/api/public-config', { credentials:'include' });
+    const cfg = await r.json();
+    if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) return null;
+    _supa = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+    return _supa;
+  })();
+  return _supaReady;
+}
+
+async function authToken(){
+  try{
+    const sb = await getSupabase();
+    if (!sb) return null;
+    const { data } = await sb.auth.getSession();
+    return (data && data.session && data.session.access_token) || null;
+  }catch(e){ return null; }
+}
+
+async function api(path, opts){
+  const token = await authToken();
   for(let attempt=0; attempt<2; attempt++){
-    const r=await fetch(path,{credentials:'include',headers:{accept:'application/json'}});
+    const headers = Object.assign({ accept:'application/json' },
+                                  (opts && opts.headers) || {});
+    if (token) headers.Authorization = 'Bearer ' + token;
+    const r=await fetch(path, Object.assign({ credentials:'include' }, opts||{}, { headers }));
     const ct=r.headers.get('content-type')||'';
     if(!ct.includes('json')){
       const body=(await r.text()).slice(0,120);
@@ -211,7 +246,11 @@ $('#go').onclick=async()=>{
   Object.entries(st).forEach(([k,v])=>fd.append(k,v?'1':'0'));
   const g=$('#go'); g.disabled=true; g.textContent=picked?'Uploading…':'Starting…';
   $('#proc').classList.add('on'); steps('queued');
-  try{ const r=await fetch('/api/jobs',{method:'POST',body:fd,credentials:'include'});
+  try{ const _t = await authToken();
+    const r=await fetch('/api/jobs',{
+      method:'POST', body:fd, credentials:'include',
+      headers: _t ? { Authorization: 'Bearer ' + _t } : {}
+    });
     const d=await r.json().catch(()=>({}));
     if(!r.ok){ const [t,m]=human(d.error,r.status); throw Object.assign(new Error(m),{t}); }
     g.textContent='Processing…'; toast('Processing started',"We'll show your clips here when they're ready."); watch(d.jobId);
@@ -232,7 +271,12 @@ function watch(id){ clearInterval(poll); let n=0;
 function reset(){ const g=$('#go'); g.disabled=false; g.textContent='Get clips in 1 click'; }
 
 $('#hero-x').onclick=()=>$('.hero').style.display='none';
-$('#out').onclick=async()=>{ try{await fetch('/api/logout',{method:'POST',credentials:'include'})}catch(e){} location.href='/login'; };
+$('#out').onclick=async()=>{
+  try{ const sb=await getSupabase(); if(sb) await sb.auth.signOut(); }catch(e){}
+  try{ await fetch('/api/logout',{method:'POST',credentials:'include'}); }catch(e){}
+  try{ sessionStorage.removeItem('sc_auth_bounce'); }catch(e){}
+  location.href='/login';
+};
 $('#help').onclick=()=>toast('Help','Use the in-app assistant or the Report a bug link.');
 
 /* ================= REFERENCE DEMO TIMELINE (development only) =================
