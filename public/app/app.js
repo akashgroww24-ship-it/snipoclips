@@ -102,15 +102,36 @@ async function me(){ try{
 } }
 
 // Single place that handles "you are not signed in".
+// Guarded so a server/browser session mismatch can't cause a redirect loop.
 let _redirecting = false;
 function redirectToLogin(){
   if(_redirecting || PREVIEW) return;
+
+  // If we already bounced here from /login very recently, stop — otherwise
+  // /app -> /login -> /app -> ... loops forever when the browser has a
+  // Supabase session but the server has no cookie.
+  try{
+    const last = +(sessionStorage.getItem('sc_auth_bounce') || 0);
+    if (Date.now() - last < 10000) {
+      console.warn('[snipoclip] auth bounce detected — staying put. '
+        + 'Your browser is signed in but the server session is missing.');
+      const g = document.getElementById('grid');
+      if (g) g.innerHTML = '<div class="empty"><p>Session problem</p>'
+        + '<small>You appear signed in, but the server did not accept the session. '
+        + 'Try signing out and in again.</small></div>';
+      const m = document.getElementById('mins'); if (m) m.textContent = '—';
+      return;
+    }
+    sessionStorage.setItem('sc_auth_bounce', String(Date.now()));
+  }catch(e){}
+
   _redirecting = true;
   try{ location.replace('/login?next=' + encodeURIComponent(location.pathname + location.hash)); }
   catch(e){ location.href = '/login'; }
 }
 
 function applyMe(m){
+  try{ sessionStorage.removeItem('sc_auth_bounce'); }catch(e){}
   const q=m.minutes||{};
   $('#mins').textContent=(typeof q.remaining==='number')?q.remaining.toLocaleString():'—';
   $('#av').textContent=(m.email||'?')[0].toUpperCase(); $('#av').title=m.email||'';
