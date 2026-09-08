@@ -69,6 +69,7 @@ router.post('/jobs', requireUser, genLimit, upload.single('video'),
     const duration = ['auto','short','medium','long'].includes(req.body.duration) ? req.body.duration : 'auto';
     const count = Math.min(12, Math.max(1, parseInt(req.body.count, 10) || 8));
     const captionStyle = ['classic','white','green','pink'].includes(req.body.captionStyle) ? req.body.captionStyle : 'classic';
+    const clipStyle = ['clean','karaoke','sigma','meme'].includes(req.body.clipStyle) ? req.body.clipStyle : 'clean';
     const enhance = req.body.enhance === '1' || req.body.enhance === 'true' || req.body.enhance === true;
     const broll = req.body.broll === '1' || req.body.broll === 'true' || req.body.broll === true;
     const ratio = ['9:16','1:1','16:9','4:5'].includes(req.body.ratio) ? req.body.ratio : '9:16';
@@ -134,7 +135,7 @@ router.post('/jobs', requireUser, genLimit, upload.single('video'),
     if (error) return res.status(500).json({ error: 'Could not create job' });
 
     // Process asynchronously (in-process worker; swap for a queue at scale).
-    setImmediate(() => processJob(job, { filePath, videoUrl, prompt, duration, count: effCount, captionStyle, enhance, broll, ratio, hook, fillers, highlight, progress, faceTrack, emoji, karaoke, language }));
+    setImmediate(() => processJob(job, { filePath, videoUrl, prompt, duration, count: effCount, captionStyle, clipStyle, enhance, broll, ratio, hook, fillers, highlight, progress, faceTrack, emoji, karaoke, language }));
     res.json({ jobId: job.id });
   }
 );
@@ -204,6 +205,7 @@ router.post('/clips/:id/restyle', requireUser, express.json(), async (req, res) 
   const truthy = v => v === true || v === '1' || v === 1;
   const edit = {
     captionStyle: ['classic','white','green','pink'].includes(b.captionStyle) ? b.captionStyle : (cur.captionStyle || 'classic'),
+    clipStyle: ['clean','karaoke','sigma','meme'].includes(b.clipStyle) ? b.clipStyle : (cur.clipStyle || 'clean'),
     font: (typeof b.font === 'string' && b.font.trim()) ? b.font.trim().slice(0, 40) : (cur.font || 'Noto Sans Devanagari'),
     fontSize: Math.min(140, Math.max(40, parseInt(b.fontSize, 10) || cur.fontSize || 74)),
     position: ['bottom','middle','top'].includes(b.position) ? b.position : (cur.position || 'bottom'),
@@ -321,6 +323,7 @@ function cleanTemplateSettings(s){
   return {
     ratio: ['9:16','1:1','16:9','4:5'].includes(s.ratio) ? s.ratio : '9:16',
     captionStyle: ['classic','white','green','pink'].includes(s.captionStyle) ? s.captionStyle : 'classic',
+    clipStyle: ['clean','karaoke','sigma','meme'].includes(s.clipStyle) ? s.clipStyle : 'clean',
     hook: !!s.hook, fillers: !!s.fillers, highlight: !!s.highlight, emoji: !!s.emoji,
     broll: !!s.broll, enhance: !!s.enhance, faceTrack: !!s.faceTrack, progress: !!s.progress
   };
