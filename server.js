@@ -122,9 +122,6 @@ app.get('/api/public-config', (req, res) => res.json({
 app.use('/api', clipsRouter);
 app.use('/api', billingRouter);
 app.use('/api', youtubeRouter);
-app.use('/api', clipsRouter);
-app.use('/api', billingRouter);
-app.use('/api', youtubeRouter);
 app.use('/__debug', require('./routes/debug'));
 
 // ============================================================
