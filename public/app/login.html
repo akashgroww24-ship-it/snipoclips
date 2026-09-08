@@ -116,7 +116,18 @@ async function init(){
   if(!cfg.supabaseUrl||!cfg.supabaseAnonKey){ msg('Auth not configured yet — Supabase keys are missing on the server.'); return; }
   supa=window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
   const { data:{ session } } = await supa.auth.getSession();
-  if(session) location.href = nextUrl();
+  if(session){
+    // A browser session is not enough — the server must accept it too,
+    // otherwise /app bounces straight back here and we loop.
+    try{
+      const r = await fetch('/api/me', { credentials:'include' });
+      if (r.ok) { location.href = nextUrl(); return; }
+      msg('Your session expired on the server. Please sign in again.');
+      try{ await supa.auth.signOut(); }catch(e){}
+    }catch(e){
+      msg("Can't reach the server. Try again in a moment.");
+    }
+  }
 }
 init();
 
