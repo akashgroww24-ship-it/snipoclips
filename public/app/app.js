@@ -169,6 +169,7 @@ $('#go').onclick=async()=>{
   if(picked) fd.append('video',picked); else fd.append('videoUrl',u);
   fd.append('ratio',$('#ratio').value); fd.append('duration',$('#duration').value);
   fd.append('captionStyle',$('#captionStyle').value);
+  fd.append('clipStyle',($('#clipStyle')||{}).value||'clean');
   if($('#count').value) fd.append('count',$('#count').value);
   if($('#language').value!=='auto') fd.append('language',$('#language').value);
   Object.entries(st).forEach(([k,v])=>fd.append(k,v?'1':'0'));
