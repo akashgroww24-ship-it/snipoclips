@@ -94,7 +94,21 @@ async function me(){ try{
   if(PREVIEW){ applyMe(FIX.me); if(FIX.forceLowCredits)
     toast("You're low on Credits!",'Top up to keep exporting clips.','err'); return; }
   applyMe(await api('/api/me'));
-}catch(e){ console.error('[snipoclip] /api/me failed:',e); $('#mins').textContent='—'; } }
+}catch(e){
+  console.error('[snipoclip] /api/me failed:',e);
+  // Not signed in -> send them to the login page instead of showing an empty app.
+  if(e && (e.status===401 || e.status===403)){ redirectToLogin(); return; }
+  $('#mins').textContent='—';
+} }
+
+// Single place that handles "you are not signed in".
+let _redirecting = false;
+function redirectToLogin(){
+  if(_redirecting || PREVIEW) return;
+  _redirecting = true;
+  try{ location.replace('/login?next=' + encodeURIComponent(location.pathname + location.hash)); }
+  catch(e){ location.href = '/login'; }
+}
 
 function applyMe(m){
   const q=m.minutes||{};
@@ -110,6 +124,7 @@ async function load(){ try{
   clips=(await api('/api/clips')).clips||[]; draw();
 }catch(e){
   console.error('[snipoclip] /api/clips failed:',e);
+  if(e && (e.status===401 || e.status===403)){ redirectToLogin(); return; }
   const offline=location.protocol==='file:';
   $('#grid').innerHTML=`<div class="empty">
     <p>${offline?'No backend on this page':"Couldn't load your clips"}</p>
