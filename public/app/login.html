@@ -61,6 +61,15 @@
 <script>
 let supa, mode='in';
 const $=id=>document.getElementById(id);
+// Where to go after a successful sign-in (set by /app when it redirects here).
+function nextUrl(){
+  try{
+    const n = new URLSearchParams(location.search).get('next');
+    // only allow same-site paths — never an external URL
+    if (n && n.charAt(0) === '/' && n.charAt(1) !== '/') return n;
+  }catch(e){}
+  return '/app';
+}
 const msg=(t,ok)=>{ const m=$('msg'); m.textContent=t; m.className='msg '+(ok?'ok':'err'); };
 
 /* ---- lightweight i18n for the auth screen (login strings live here, not in app/i18n.js) ---- */
@@ -107,13 +116,13 @@ async function init(){
   if(!cfg.supabaseUrl||!cfg.supabaseAnonKey){ msg('Auth not configured yet — Supabase keys are missing on the server.'); return; }
   supa=window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
   const { data:{ session } } = await supa.auth.getSession();
-  if(session) location.href='/app';
+  if(session) location.href = nextUrl();
 }
 init();
 
 $('google').onclick=async()=>{
   if(!supa){ msg('Auth not configured yet'); return; }
-  const { error }=await supa.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin + '/app' } });
+  const { error }=await supa.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin + nextUrl() } });
   if(error) msg(error.message);
 };
 
@@ -150,11 +159,11 @@ $('submit').onclick=async()=>{
     if(mode==='in'){
       const { error }=await supa.auth.signInWithPassword({ email, password });
       if(error){ _fails++; if(_fails>=5){ _fails=0; _lockUntil=Date.now()+60000; _locked(); return; } return msg(error.message); }
-      _fails=0; location.href='/app';
+      _fails=0; location.href = nextUrl();
     }else{
       const { data, error }=await supa.auth.signUp({ email, password });
       if(error) return msg(error.message);
-      if(data && data.session){ location.href='/app#upgrade'; return; }
+      if(data && data.session){ location.href = nextUrl() + '#upgrade'; return; }
       msg('Account created. Check your email to confirm, then sign in.', true);
       setMode('in');
     }
