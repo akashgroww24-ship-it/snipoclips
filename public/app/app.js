@@ -258,10 +258,16 @@ $('#go').onclick=async()=>{
     $('#proc').classList.remove('on'); reset(); } };
 function watch(id){ clearInterval(poll); let n=0;
   poll=setInterval(async()=>{ try{
-    const r=await fetch('/api/jobs/'+id,{credentials:'include'}); const d=await r.json(); const j=d.job||{};
+    const _pt = await authToken();
+    const r=await fetch('/api/jobs/'+id,{
+      credentials:'include',
+      headers: _pt ? { Authorization: 'Bearer ' + _pt, accept:'application/json' } : { accept:'application/json' }
+    });
+    if(r.status===401||r.status===403){ clearInterval(poll); redirectToLogin(); return; }
+    const d=await r.json(); const j=d.job||{};
     steps(j.stage||'queued');
     if(j.status==='done'||(d.clips&&d.clips.length)){ clearInterval(poll); steps('done');
-      $('#proc-t').textContent=(d.clips?.length||0)+' clips ready';
+      $('#proc-t').textContent=((d.clips&&d.clips.length)||0)+' clips ready';
       toast('Clips ready','Scroll down to watch and download them.'); reset(); load(); me(); }
     else if(j.status==='error'){ clearInterval(poll); const [t,m]=human(j.error,500);
       toast(t,m,'err'); console.error('[job]',j.error); $('#proc').classList.remove('on'); reset(); }
