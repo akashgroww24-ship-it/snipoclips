@@ -38,8 +38,41 @@ $('#file').onchange=e=>setFile(e.target.files[0]);
 ['dragenter','dragover'].forEach(v=>$('#drop').addEventListener(v,e=>{e.preventDefault();$('#drop').classList.add('over')}));
 ['dragleave','drop'].forEach(v=>$('#drop').addEventListener(v,e=>{e.preventDefault();$('#drop').classList.remove('over')}));
 $('#drop').addEventListener('drop',e=>setFile(e.dataTransfer.files[0]));
-window.addEventListener('paste',e=>{ const f=[...(e.clipboardData?.files||[])][0]; if(f) return setFile(f);
-  const t=e.clipboardData?.getData('text')||''; if(/^https?:\/\//.test(t)){setMode('url');$('#url').value=t.trim();} });
+/* Paste anywhere on the page to start a job.
+   NOTE: when the paste target is the URL input itself, do nothing — the browser
+   already inserts the text. Handling it here as well wrote the link twice
+   (e.g. "https://youtu.be/abchttps://youtu.be/abc"), which no downloader can read. */
+window.addEventListener('paste', e => {
+  const cd = e.clipboardData; if (!cd) return;
+
+  const f = (cd.files && cd.files[0]) || null;
+  if (f) { e.preventDefault(); return setFile(f); }
+
+  const urlBox = $('#url');
+  if (e.target === urlBox) return;          // let the input handle its own paste
+
+  const t = (cd.getData('text') || '').trim();
+  if (/^https?:\/\//.test(t)) {
+    e.preventDefault();
+    setMode('url');
+    urlBox.value = t;
+  }
+});
+
+/* Clean up what lands in the URL box: strip whitespace, and if two links got
+   concatenated keep the first one. */
+(function guardUrlInput(){
+  const box = $('#url'); if (!box) return;
+  const tidy = () => {
+    let v = (box.value || '').trim();
+    const doubled = v.match(/^(https?:\/\/\S+?)(https?:\/\/.*)$/);
+    if (doubled) v = doubled[1];
+    v = v.replace(/[,\s]+$/, '');
+    if (v !== box.value) box.value = v;
+  };
+  box.addEventListener('blur', tidy);
+  box.addEventListener('input', () => { if (/https?:\/\/.*https?:\/\//.test(box.value)) tidy(); });
+})();
 
 /* options — real backend fields only */
 const T=[['karaoke','Karaoke',1],['hook','Hook title',1],['enhance','Enhance audio',0],['fillers','Clean up',0],
