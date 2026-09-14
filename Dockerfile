@@ -41,9 +41,10 @@ RUN npm install --omit=dev
 COPY . .
 
 # Keep Reel Composer / Music as separate bundles, but expose them directly
-# inside the existing /app dashboard without duplicating the dashboard file.
+# inside the existing dashboards without duplicating the large HTML files.
 RUN python3 - <<'PY'
 from pathlib import Path
+
 p = Path('/app/public/app/index.html')
 s = p.read_text()
 tags = [
@@ -58,6 +59,14 @@ for tag in tags:
     if tag not in s:
         s = s.replace('</body>', tag + '\n</body>')
 p.write_text(s)
+
+admin = Path('/app/public/dashboard.html')
+if admin.exists():
+    a = admin.read_text()
+    tag = '<script src="admin-music-link.js"></script>'
+    if tag not in a and '</body>' in a:
+        a = a.replace('</body>', tag + '\n</body>')
+        admin.write_text(a)
 PY
 
 ENV NODE_ENV=production
