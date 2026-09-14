@@ -122,7 +122,11 @@ app.get('/api/public-config', (req, res) => res.json({
 app.use('/api', clipsRouter);
 app.use('/api', billingRouter);
 app.use('/api', youtubeRouter);
-app.use('/__debug', require('./routes/debug'));
+// Diagnostic probe exposes infrastructure details and key-presence flags, so it
+// must never be mounted on the public production service.
+if (process.env.NODE_ENV !== 'production' && process.env.ENABLE_DEBUG_ROUTES === '1') {
+  app.use('/__debug', require('./routes/debug'));
+}
 
 // ============================================================
 //  ADMIN (separate from end users)
