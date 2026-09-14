@@ -53,8 +53,7 @@ COPY package*.json ./
 RUN npm install --omit=dev
 COPY . .
 
-# Keep Reel Composer / Music as separate bundles, but expose them directly
-# inside the existing dashboards without duplicating the large HTML files.
+# Keep feature bundles separate, then expose them inside the existing pages.
 RUN python3 - <<'PY'
 from pathlib import Path
 
@@ -65,6 +64,7 @@ tags = [
     '<script src="reel-layout-fix.js"></script>',
     '<script src="music-picker.js"></script>',
     '<script src="music-picker-submit.js"></script>',
+    '<script src="activity-heartbeat.js"></script>',
 ]
 if '</body>' not in s:
     raise SystemExit('dashboard index.html has no </body> tag')
@@ -76,10 +76,13 @@ p.write_text(s)
 admin = Path('/app/public/dashboard.html')
 if admin.exists():
     a = admin.read_text()
-    tag = '<script src="admin-music-link.js"></script>'
-    if tag not in a and '</body>' in a:
-        a = a.replace('</body>', tag + '\n</body>')
-        admin.write_text(a)
+    for tag in [
+        '<script src="admin-users.js"></script>',
+        '<script src="admin-music-link.js"></script>',
+    ]:
+        if tag not in a and '</body>' in a:
+            a = a.replace('</body>', tag + '\n</body>')
+    admin.write_text(a)
 PY
 
 ENV NODE_ENV=production
