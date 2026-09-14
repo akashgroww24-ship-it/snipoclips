@@ -12,10 +12,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # yt-dlp / YouTube hardening
 # - pre-release/nightly yt-dlp picks up YouTube extractor fixes quickly
 # - yt-dlp[default] installs the EJS challenge solver
-# - bgutil provides per-video Proof-of-Origin tokens, which is the current
-#   recommended path when YouTube challenges a hosting-provider/datacenter IP
-# - the provider script lives in root's default discovery location so yt-dlp
-#   can invoke it automatically without running a second public service
+# - bgutil provides per-video Proof-of-Origin tokens
+# - requests are deliberately spaced and retries back off exponentially so a
+#   transient 429/throttle does not turn into a burst of repeated requests
 # ---------------------------------------------------------------------------
 RUN pip3 install --break-system-packages --no-cache-dir --upgrade --pre \
       "yt-dlp[default]" \
@@ -33,6 +32,20 @@ RUN pip3 install --break-system-packages --no-cache-dir --upgrade --pre \
       'node' \
       '--extractor-args' \
       'youtube:player_client=default,mweb' \
+      '--sleep-requests' \
+      '2' \
+      '--sleep-interval' \
+      '2' \
+      '--max-sleep-interval' \
+      '5' \
+      '--extractor-retries' \
+      '2' \
+      '--retry-sleep' \
+      'extractor:exp=2:20' \
+      '--retry-sleep' \
+      'http:exp=2:20' \
+      '--retry-sleep' \
+      'fragment:exp=1:10' \
       > /etc/yt-dlp.conf
 
 WORKDIR /app
