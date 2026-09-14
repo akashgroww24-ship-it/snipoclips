@@ -10,14 +10,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # ---------------------------------------------------------------------------
 # yt-dlp
-# Installed via pip instead of the GitHub binary. YouTube changes its player
-# often and the standalone binary goes stale; the pip package resolves the
-# newest release at build time, and can be upgraded by redeploying.
-# The nightly channel tracks YouTube breakages faster than stable releases.
+# Installed via pip with the default extras, which include yt-dlp-ejs. YouTube
+# now requires an external JS runtime for robust extraction; Node 22 is already
+# provided by the base image, so explicitly enable it. The YouTube-specific
+# player client fallback works around current extractor breakage without
+# changing behavior for Vimeo/direct URLs/etc.
 # ---------------------------------------------------------------------------
 RUN pip3 install --break-system-packages --no-cache-dir --upgrade \
       "yt-dlp[default]" \
- && yt-dlp --version
+ && yt-dlp --version \
+ && printf '%s\n' \
+      '--js-runtimes' \
+      'node' \
+      '--extractor-args' \
+      'youtube:player_client=default,web_embedded' \
+      > /etc/yt-dlp.conf
 
 WORKDIR /app
 COPY package*.json ./
