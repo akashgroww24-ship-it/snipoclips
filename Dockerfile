@@ -9,20 +9,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
  && rm -rf /var/lib/apt/lists/*
 
 # ---------------------------------------------------------------------------
-# yt-dlp
-# Current YouTube extraction requires an external JS runtime plus yt-dlp-ejs.
-# The node:22 base image already supplies a supported Node runtime, but Node is
-# not enabled by yt-dlp automatically. Installing the default extras supplies
-# the matching EJS challenge solver and the config explicitly enables Node.
-# Keep yt-dlp's own default YouTube clients so upstream fixes remain effective.
+# yt-dlp / YouTube hardening
+# YouTube changes frequently break the monthly stable yt-dlp release. Upstream
+# explicitly recommends the nightly channel when stable is failing. The default
+# extras include yt-dlp-ejs, and Node 22 is the JS runtime used for challenge
+# solving. For current 2026 player-response failures, retry-capable YouTube
+# clients are enabled globally; the app's own format selector still prefers the
+# highest source quality and falls back to a combined format when needed.
 # ---------------------------------------------------------------------------
-RUN pip3 install --break-system-packages --no-cache-dir --upgrade \
+RUN pip3 install --break-system-packages --no-cache-dir --upgrade --pre \
       "yt-dlp[default]" \
  && node --version \
  && yt-dlp --version \
  && printf '%s\n' \
       '--js-runtimes' \
       'node' \
+      '--extractor-args' \
+      'youtube:player_client=default,web_embedded' \
       > /etc/yt-dlp.conf
 
 WORKDIR /app
