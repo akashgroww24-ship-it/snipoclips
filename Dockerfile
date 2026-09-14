@@ -40,6 +40,21 @@ COPY package*.json ./
 RUN npm install --omit=dev
 COPY . .
 
+# Keep the Reel Composer as a separate bundle, but expose it directly inside
+# the existing /app dashboard. This build-time insertion avoids duplicating or
+# replacing the large hand-designed dashboard document.
+RUN python3 - <<'PY'
+from pathlib import Path
+p = Path('/app/public/app/index.html')
+s = p.read_text()
+tag = '<script src="reel-integrated.js"></script>'
+if tag not in s:
+    if '</body>' not in s:
+        raise SystemExit('dashboard index.html has no </body> tag')
+    s = s.replace('</body>', tag + '\n</body>')
+    p.write_text(s)
+PY
+
 ENV NODE_ENV=production
 ENV PORT=8080
 ENV TMP_DIR=/tmp/snipoclips
