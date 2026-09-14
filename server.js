@@ -18,6 +18,7 @@ const { checkAdmin, issueToken, requireAdmin, COOKIE_OPTS } = require('./lib/aut
 const clipsRouter = require('./routes/clips');
 const billingRouter = require('./routes/billing');
 const youtubeRouter = require('./routes/youtube');
+const reelsRouter = require('./routes/reels');
 const metrics = require('./lib/metrics');
 const { admin: sbAdmin } = require('./lib/supabase');
 const { startCleanupScheduler } = require('./lib/cleanup');
@@ -122,6 +123,7 @@ app.get('/api/public-config', (req, res) => res.json({
 app.use('/api', clipsRouter);
 app.use('/api', billingRouter);
 app.use('/api', youtubeRouter);
+app.use('/api', reelsRouter);
 // Diagnostic probe exposes infrastructure details and key-presence flags, so it
 // must never be mounted on the public production service.
 if (process.env.NODE_ENV !== 'production' && process.env.ENABLE_DEBUG_ROUTES === '1') {
