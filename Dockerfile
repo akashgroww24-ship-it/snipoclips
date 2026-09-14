@@ -40,8 +40,8 @@ COPY package*.json ./
 RUN npm install --omit=dev
 COPY . .
 
-# Keep the Reel Composer as separate bundles, but expose them directly inside
-# the existing /app dashboard without duplicating the large dashboard document.
+# Keep Reel Composer / Music as separate bundles, but expose them directly
+# inside the existing /app dashboard without duplicating the dashboard file.
 RUN python3 - <<'PY'
 from pathlib import Path
 p = Path('/app/public/app/index.html')
@@ -49,6 +49,8 @@ s = p.read_text()
 tags = [
     '<script src="reel-integrated.js"></script>',
     '<script src="reel-layout-fix.js"></script>',
+    '<script src="music-picker.js"></script>',
+    '<script src="music-picker-submit.js"></script>',
 ]
 if '</body>' not in s:
     raise SystemExit('dashboard index.html has no </body> tag')
