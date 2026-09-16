@@ -10,34 +10,9 @@ const { checkQuota, checkMinutes } = require('../lib/quota');
 const { admin } = require('../lib/supabase');
 const { processJob, renderEdit, probeDuration, activeJobs, maxConcurrency } = require('../lib/pipeline');
 const rateLimit = require('express-rate-limit');
+const { MAX_REMOTE_BYTES, parseRemoteUrl, platformProvider, sourceLabel } = require('../lib/remote-media');
 
 const router = express.Router();
-
-// SSRF GUARD: the videoUrl is handed to yt-dlp, which will fetch ANY URL —
-// including internal services, cloud metadata (169.254.169.254) and file://.
-// Only allow http/https to public hosts; reject loopback/private/link-local.
-function isSafePublicUrl(u) {
-  let url; try { url = new URL(String(u)); } catch { return false; }
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') return false;
-  const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, '');
-  if (!host) return false;
-  if (host === 'localhost' || host.endsWith('.localhost')) return false;
-  if (host === 'metadata.google.internal' || host === '169.254.169.254') return false;
-  const v4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (v4) {
-    const a=+v4[1], b=+v4[2];
-    if (a===0||a===10||a===127) return false;            // this-host / private / loopback
-    if (a===169 && b===254) return false;                 // link-local + metadata
-    if (a===172 && b>=16 && b<=31) return false;          // private
-    if (a===192 && b===168) return false;                 // private
-    if (a===100 && b>=64 && b<=127) return false;         // CGNAT
-    if (a>=224) return false;                             // multicast/reserved
-  }
-  if (host.includes(':')) {                                // IPv6 literal
-    if (host==='::1'||host.startsWith('fc')||host.startsWith('fd')||host.startsWith('fe80')||host.startsWith('::ffff:')) return false;
-  }
-  return true;
-}
 
 // Anti-abuse: cap how many generate requests one user can fire per hour.
 const genLimit = rateLimit({
@@ -50,7 +25,18 @@ const genLimit = rateLimit({
 
 const TMP = process.env.TMP_DIR || path.join(os.tmpdir(), 'snipoclips');
 fs.mkdirSync(TMP, { recursive: true });
-const upload = multer({ dest: TMP, limits: { fileSize: 1024 * 1024 * 1024 } }); // 1GB cap
+const LOCAL_VIDEO_EXTS = new Set(['.mp4', '.mov', '.webm', '.mkv', '.m4v']);
+const upload = multer({
+  dest: TMP,
+  limits: { fileSize: MAX_REMOTE_BYTES, files: 1, fields: 30 },
+  fileFilter(_req, file, cb) {
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    if ((file.mimetype || '').startsWith('video/') || LOCAL_VIDEO_EXTS.has(ext)) return cb(null, true);
+    const err = new Error('Choose an MP4, MOV, WebM or MKV video file.');
+    err.code = 'UNSUPPORTED_MEDIA_TYPE';
+    cb(err);
+  }
+});
 const CLIPS_BUCKET = process.env.SUPABASE_CLIPS_BUCKET || 'clips';
 
 async function sign(p) {
@@ -62,8 +48,11 @@ async function sign(p) {
 router.post('/jobs', requireUser, genLimit, upload.single('video'),
   body('videoUrl').optional({ checkFalsy: true }).isURL(),
   async (req, res) => {
-    if (!validationResult(req).isEmpty()) return res.status(400).json({ error: 'Provide a valid video URL or file' });
     const filePath = req.file ? req.file.path : null;
+    if (!validationResult(req).isEmpty()) {
+      if (filePath) fs.rmSync(filePath, { force: true });
+      return res.status(400).json({ error: 'Provide a valid direct video URL or file' });
+    }
     const videoUrl = req.body.videoUrl || null;
     const prompt = (req.body.prompt || '').toString().slice(0, 800);
     const duration = ['auto','short','medium','long'].includes(req.body.duration) ? req.body.duration : 'auto';
@@ -87,10 +76,21 @@ router.post('/jobs', requireUser, genLimit, upload.single('video'),
     // (e.g. 'hi','en') forces it. Not hardcoded to any single language.
     const langRaw = (req.body.language || 'auto').toString().toLowerCase();
     const language = /^[a-z]{2}$/.test(langRaw) ? langRaw : undefined;
-    if (!filePath && !videoUrl) return res.status(400).json({ error: 'Upload a file or paste a video URL' });
-    if (videoUrl && !isSafePublicUrl(videoUrl)) {
-      if (filePath) fs.rmSync(filePath, { force: true });
-      return res.status(400).json({ error: 'That link is not allowed. Paste a public video URL (YouTube, Vimeo, TikTok, etc.).' });
+    if (!filePath && !videoUrl) return res.status(400).json({ error: 'Upload a video file or paste a direct video-file URL' });
+    if (filePath && videoUrl) {
+      fs.rmSync(filePath, { force: true });
+      return res.status(400).json({ error: 'Choose one source: a video file or a direct video URL.' });
+    }
+    if (videoUrl) {
+      try { parseRemoteUrl(videoUrl); }
+      catch (e) { return res.status(400).json({ error: e.message }); }
+      const provider = platformProvider(videoUrl);
+      if (provider) {
+        return res.status(422).json({
+          code: 'platform_url',
+          error: `${provider} page links are not imported because Snipo Clips runs without proxy or bypass services. Upload a video you own, or paste a direct .mp4/.mov/.webm file URL.`
+        });
+      }
     }
 
     // Concurrency gate — protect the box (and your AI spend) from pile-ups.
@@ -129,10 +129,14 @@ router.post('/jobs', requireUser, genLimit, upload.single('video'),
     const remaining = (q.remaining === Infinity || q.remaining === 'unlimited') ? count : Math.max(1, q.remaining);
     const effCount = Math.min(count, remaining);
 
+    const safeSource = videoUrl ? sourceLabel(videoUrl) : null;
     const { data: job, error } = await admin.from('jobs')
-      .insert({ user_id: req.user.id, source_url: videoUrl, status: 'queued', stage: 'queued' })
+      .insert({ user_id: req.user.id, source_url: safeSource, status: 'queued', stage: 'queued' })
       .select().single();
-    if (error) return res.status(500).json({ error: 'Could not create job' });
+    if (error) {
+      if (filePath) fs.rmSync(filePath, { force: true });
+      return res.status(500).json({ error: 'Could not create job' });
+    }
 
     // Process asynchronously (in-process worker; swap for a queue at scale).
     setImmediate(() => processJob(job, { filePath, videoUrl, prompt, duration, count: effCount, captionStyle, clipStyle, enhance, broll, ratio, hook, fillers, highlight, progress, faceTrack, emoji, karaoke, language }));
@@ -279,9 +283,9 @@ const chatLimit = rateLimit({
   message: { error: 'Too many messages this hour — please wait a bit.' }
 });
 const HELP_SYSTEM = `You are Snipo, the friendly in-app help assistant for Snipoclip (snipoclip.com), an AI tool that turns long videos into short vertical clips.
-How it works: on the Create page the user pastes a video link (YouTube, Vimeo, Twitch, Facebook, etc.) or uploads a file, optionally types a description of the clips they want, picks clip length (Short/Medium/Long), number of clips, caption colour, Audio (AI enhance) and B-roll, then clicks Generate. The AI finds the best moments and makes 9:16 vertical clips with karaoke word-by-word captions (many languages incl. Hindi + English) and a 0-100 virality score. Clips appear under "My clips": play, Download, Copy caption, Edit captions (font/size/colour/position), select multiple + Download selected. Clips auto-delete after 30 days.
+How it works: on the Create page the user uploads a video file they own or pastes a direct video-file URL (for example a signed .mp4 URL), optionally types a description of the clips they want, picks clip length (Short/Medium/Long), number of clips, caption colour, Audio (AI enhance) and B-roll, then clicks Generate. YouTube/social page URLs are not downloaded because Snipoclip does not use proxy or anti-bot bypass services. The AI finds the best moments and makes 9:16 vertical clips with karaoke word-by-word captions (many languages incl. Hindi + English) and a 0-100 virality score. Clips appear under "My clips": play, Download, Copy caption, Edit captions (font/size/colour/position), select multiple + Download selected. Clips auto-delete after 30 days.
 Plans (monthly; yearly is cheaper): Free = 2 trial clips (watermarked, 720p); Single Slice $12.49/mo = 10 clips/month with captions + editor; Half Pie $24.99/mo = 30 clips/month, no watermark up to 1080p, AI B-roll + audio enhance (most popular); Full Pie $49.99/mo = 100 clips/month, up to 4K, cinematic B-roll, priority processing. Subscriptions renew monthly and can be cancelled anytime via "Manage subscription".
-Tips: if a link fails it's usually temporary, try again; longer videos take a few minutes to process.
+Tips: if a direct file link fails, upload the original file instead; longer videos take a few minutes to process.
 Style: reply short, warm, simple, practical. If the user describes a bug or something broken, tell them to tap the "Report a bug" link at the bottom of this chat so the team gets it. Never invent features that don't exist.`;
 
 router.post('/chat', requireUser, chatLimit, express.json(), async (req, res) => {

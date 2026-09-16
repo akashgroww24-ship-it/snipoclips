@@ -6,7 +6,7 @@ Clips render with ffmpeg. Managed/shared hosting can't run it. Deploy to one of:
   add env vars in the dashboard → deploy. (render.yaml is included.)
 - **Railway**: New Project → Deploy from repo → it builds the Dockerfile → add env vars.
 - **Fly.io** or a **VPS** (Hostinger VPS, DigitalOcean): `apt install ffmpeg`, run the app.
-The Dockerfile bakes in ffmpeg + yt-dlp, so any container platform works out of the box.
+The Dockerfile bakes in ffmpeg, so any container platform works out of the box.
 
 ## MUST be set/working for launch (not "later")
 1. Env vars on the host (NOT in a committed file):

@@ -23,9 +23,8 @@ for (const [name, items] of Object.entries(groups)) {
 
 console.log('\n  System binaries (install on the server)');
 const ff = bin(process.env.FFMPEG_PATH || 'ffmpeg');
-const yt = (() => { try { execSync(`${process.env.YTDLP_PATH || 'yt-dlp'} --version`, { stdio: 'ignore' }); return true; } catch { return false; } })();
 console.log(`   ${ff ? G : R} ffmpeg ${ff ? '' : '— install:  sudo apt install ffmpeg'}`);
-console.log(`   ${yt ? G : Y} yt-dlp ${yt ? '' : '— optional (for URL imports):  pip install yt-dlp'}`);
+console.log(`   ${G} direct-file URL importer — built into Node (no proxy or yt-dlp)`);
 
 console.log('\n  ------------------------');
 if (missing === 0 && ff) console.log('  ' + G + ' Ready to start:  npm start\n');

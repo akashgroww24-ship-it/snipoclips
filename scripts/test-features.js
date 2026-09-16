@@ -18,6 +18,32 @@ const { minuteDecision, planOf } = require('../lib/quota');
 const { planAudioChunks, buildASS, detectScript, transcriptConfidence, buildCandidateWindows, heuristicPick } = require('../lib/pipeline');
 const box = require('../lib/secretbox');
 const yt = require('../lib/youtube');
+const remote = require('../lib/remote-media');
+
+// ------------------------------------------------------- No-proxy media import
+test('remote importer: recognises platform page URLs that require extraction', () => {
+  assert.equal(remote.platformProvider('https://www.youtube.com/watch?v=abc123xyz'), 'YouTube');
+  assert.equal(remote.platformProvider('https://vimeo.com/123456'), 'Vimeo');
+  assert.equal(remote.platformProvider('https://cdn.example.com/my-video.mp4'), null);
+});
+
+test('remote importer: strips signed query data before storing a source label', () => {
+  const label = remote.sourceLabel('https://media.example.com/video.mp4?token=secret&expires=123#part');
+  assert.equal(label, 'https://media.example.com/video.mp4');
+});
+
+test('remote importer: rejects embedded credentials and non-standard ports', () => {
+  assert.throws(() => remote.parseRemoteUrl('https://user:pass@example.com/video.mp4'), /username|password/i);
+  assert.throws(() => remote.parseRemoteUrl('https://example.com:8443/video.mp4'), /standard/i);
+});
+
+test('remote importer: blocks private, link-local and documentation IP ranges', () => {
+  for (const ip of ['127.0.0.1', '10.1.2.3', '169.254.169.254', '192.168.1.5', '::1', '::ffff:7f00:1', 'fc00::1', '2001:db8::1', '64:ff9b::7f00:1', '2001:0000:4136:e378:8000:63bf:3fff:fdd2', '2002:7f00:1::']) {
+    assert.equal(remote.isPrivateOrReservedIp(ip), true, `${ip} should be blocked`);
+  }
+  assert.equal(remote.isPrivateOrReservedIp('8.8.8.8'), false);
+  assert.equal(remote.isPrivateOrReservedIp('2606:4700:4700::1111'), false);
+});
 
 // ---------------------------------------------------------------- Feature 1
 test('minuteDecision: rejects a single upload longer than the per-upload cap', () => {

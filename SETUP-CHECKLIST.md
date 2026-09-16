@@ -4,15 +4,15 @@ Everything in the code is done. This list is the stuff only **you** can do becau
 
 ---
 
-## 1. A host that can run ffmpeg + yt-dlp  ← hard blocker
+## 1. A host that can run ffmpeg  ← hard blocker
 Hostinger's managed Node hosting **cannot run ffmpeg**, so the clip pipeline won't work there. You need a container host:
 
 - **Render** or **Railway** or **Fly.io** (easiest — `Dockerfile` is already in the repo, they auto-build it)
 - or your **own VPS** (Hostinger VPS / DigitalOcean / Hetzner) with Docker installed
 
-The `Dockerfile` already installs ffmpeg and yt-dlp. On a plain VPS without Docker you'd run:
+The `Dockerfile` already installs ffmpeg. On a plain VPS without Docker you'd run:
 ```
-sudo apt update && sudo apt install -y ffmpeg python3-pip && pip3 install yt-dlp
+sudo apt update && sudo apt install -y ffmpeg
 ```
 
 Pick container hosting and you skip all of that.

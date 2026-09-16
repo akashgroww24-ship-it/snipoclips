@@ -46,7 +46,7 @@ usual ones:
     folders you own, e.g. DATA_DIR=/home/USER/snipoclips-data, TMP_DIR=/tmp
 
 ## IMPORTANT honest limitation
-The clip pipeline needs ffmpeg (and yt-dlp for URL imports). Hostinger's managed
+The clip pipeline needs ffmpeg. Hostinger's managed
 Node.js hosting usually does NOT let you install ffmpeg. So even once the site
 loads, real clip rendering may fail until you move to a VPS (Hostinger VPS, or
 Railway/Render/Fly.io) where you can `apt install ffmpeg`. Login, the dashboard,
