@@ -66,6 +66,7 @@ tags = [
     '<script src="music-picker-submit.js"></script>',
     '<script src="activity-heartbeat.js"></script>',
     '<script src="help-bot.js"></script>',
+    '<script src="promo-access.js"></script>',
 ]
 if '</body>' not in s:
     raise SystemExit('dashboard index.html has no </body> tag')
@@ -92,11 +93,21 @@ if admin.exists():
     for tag in [
         '<script src="admin-users.js"></script>',
         '<script src="admin-music-link.js"></script>',
+        '<script src="admin-promos.js"></script>',
     ]:
         if tag not in a and '</body>' in a:
             a = a.replace('</body>', tag + '\n</body>')
     admin.write_text(a)
 PY
+
+# Normalize every published HTML page to the SAME homepage logo, including
+# pricing, FAQ, guides, blog, account and studio pages. No client-side flicker.
+RUN python3 scripts/standardize_brand.py \
+ && node --check server.js \
+ && node --check routes/promo.js \
+ && node --check lib/quota.js \
+ && node --check public/admin-promos.js \
+ && node --check public/app/promo-access.js
 
 ENV NODE_ENV=production
 ENV PORT=8080
