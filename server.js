@@ -69,8 +69,16 @@ app.post('/api/billing/webhook', express.raw({ type: '*/*' }), async (req, res) 
     const cid = d.customer_id || (d.customer && (d.customer.customer_id || d.customer.id)) || (d.subscription && d.subscription.customer_id);
     const activate = /(active|succeeded|completed|paid|renewed)/.test(type) && !/(fail|cancel|refund|expire)/.test(type); const deactivate = /(cancel|expired|refund|fail)/.test(type);
     if (sbAdmin && userId) {
-      if (activate && ['single','half','full'].includes(plan)) { const upd = { plan, clips_used: 0, minutes_used: 0, period_start: new Date().toISOString().slice(0,10) }; if (cid) upd.dodo_customer_id = cid; await sbAdmin.from('profiles').update(upd).eq('id', userId); }
-      else if (deactivate) await sbAdmin.from('profiles').update({ plan: 'free' }).eq('id', userId);
+      if (activate && ['single','half','full'].includes(plan)) {
+        // A verified paid checkout supersedes a temporary coupon. Clear its
+        // expiration metadata so a later quota check cannot revoke payment.
+        const upd = { plan, clips_used: 0, minutes_used: 0, period_start: new Date().toISOString().slice(0,10),
+          promo_expires_at: null, promo_granted_plan: null, promo_previous_clips_used: null,
+          promo_previous_minutes_used: null, promo_previous_period_start: null, promo_code_id: null };
+        if (cid) upd.dodo_customer_id = cid;
+        await sbAdmin.from('profiles').update(upd).eq('id', userId);
+      }
+      else if (deactivate) await sbAdmin.from('profiles').update({ plan: 'free', promo_expires_at: null, promo_granted_plan: null, promo_previous_clips_used: null, promo_previous_minutes_used: null, promo_previous_period_start: null, promo_code_id: null }).eq('id', userId);
     }
     res.json({ received: true });
   } catch { res.status(200).json({ received: true }); }
@@ -89,6 +97,7 @@ app.use('/api/promo', promoRouter);
 app.use('/api', youtubeRouter);
 app.use('/api', reelsRouter);
 app.use('/api', activityRouter);
+app.use('/api/help', require('./routes/help'));
 if (process.env.NODE_ENV !== 'production' && process.env.ENABLE_DEBUG_ROUTES === '1') app.use('/__debug', require('./routes/debug'));
 
 app.post('/admin/login', loginLimiter, body('email').isEmail(), body('password').isLength({ min: 1 }), (req, res) => {
@@ -122,6 +131,7 @@ app.get('/admin/api/config-status', requireAdmin, (req, res) => { const has = k 
 if (process.env.DEV_TEST_MODE === '1' && process.env.NODE_ENV !== 'production') {
   const multer = require('multer'); const os = require('os'); const { runTestJob } = require('./lib/pipeline');
   const tmp = process.env.TMP_DIR || path.join(os.tmpdir(), 'snipoclips'); fs.mkdirSync(tmp, { recursive: true }); const up = multer({ dest: tmp, limits: { fileSize: 1024 * 1024 * 1024 } });
+  const outDir = path.join(__dirname, 'public', 'test-clips'); fs.mkdirSync(outDir, { recursive: true });
   app.post('/api/test-clip', up.single('video'), async (req, res) => { try { const source = { filePath: req.file ? req.file.path : null, videoUrl: req.body.videoUrl || null }; if (!source.filePath && !source.videoUrl) return res.status(400).json({ error: 'Upload a file or paste a URL' }); res.json(await runTestJob(source, outDir)); } catch (e) { res.status(500).json({ error: String(e.message || e).slice(0, 400) }); } });
 }
 
