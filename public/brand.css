@@ -1,0 +1,19 @@
+/* Canonical purple/pink Snipoclip play mark from /icon.svg. */
+header a.logo .snipo-brand-mark,
+nav .brand .snipo-brand-mark,
+.logo .snipo-brand-mark,
+.brand .snipo-brand-mark {
+  width:32px !important;
+  height:32px !important;
+  min-width:32px;
+  object-fit:contain;
+  display:inline-block;
+  vertical-align:middle;
+  border-radius:9px;
+  filter:drop-shadow(0 4px 13px rgba(168,85,247,.30));
+}
+nav .brand { display:flex; align-items:center; gap:10px; }
+.snipo-promo-banner {box-sizing:border-box;max-width:1040px;margin:30px auto 0;padding:24px;text-align:center;border:1px solid rgba(168,85,247,.42);border-radius:18px;background:linear-gradient(120deg,rgba(168,85,247,.12),rgba(236,72,153,.10));color:#f5f2ff;}
+.snipo-promo-banner strong{display:block;margin-bottom:8px;font-size:20px;}
+.snipo-promo-banner a{display:inline-block;color:#fff;text-decoration:none;font-weight:700;padding:10px 16px;border-radius:9px;background:linear-gradient(90deg,#a855f7,#ec4899);}
+.snipo-promo-banner p{font-size:12px;color:#c4b5d8;margin:12px 0 0;}
