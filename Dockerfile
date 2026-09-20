@@ -65,6 +65,7 @@ tags = [
     '<script src="music-picker.js"></script>',
     '<script src="music-picker-submit.js"></script>',
     '<script src="activity-heartbeat.js"></script>',
+    '<script src="help-bot.js"></script>',
 ]
 if '</body>' not in s:
     raise SystemExit('dashboard index.html has no </body> tag')
@@ -72,6 +73,18 @@ for tag in tags:
     if tag not in s:
         s = s.replace('</body>', tag + '\n</body>')
 p.write_text(s)
+
+# Mount the isolated, authenticated help API without altering the legacy
+# clips/jobs router. Fail the build if the server entry point has changed.
+server = Path('/app/server.js')
+source = server.read_text()
+anchor = "app.use('/api', activityRouter);"
+mount = "app.use('/api/help', require('./routes/help'));"
+if mount not in source:
+    if source.count(anchor) != 1:
+        raise SystemExit('Could not safely mount help API: expected server router anchor once')
+    source = source.replace(anchor, anchor + '\n' + mount)
+    server.write_text(source)
 
 admin = Path('/app/public/dashboard.html')
 if admin.exists():
