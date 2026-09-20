@@ -17,6 +17,7 @@ const db = require('./lib/db');
 const { checkAdmin, issueToken, requireAdmin, COOKIE_OPTS } = require('./lib/auth');
 const clipsRouter = require('./routes/clips');
 const billingRouter = require('./routes/billing');
+const promoRouter = require('./routes/promo');
 const youtubeRouter = require('./routes/youtube');
 const reelsRouter = require('./routes/reels');
 const activityRouter = require('./routes/activity');
@@ -84,6 +85,7 @@ app.use(globalLimiter);
 app.get('/api/public-config', (req, res) => res.json({ supabaseUrl: process.env.SUPABASE_URL || '', supabaseAnonKey: process.env.SUPABASE_ANON_KEY || '' }));
 app.use('/api', clipsRouter);
 app.use('/api', billingRouter);
+app.use('/api/promo', promoRouter);
 app.use('/api', youtubeRouter);
 app.use('/api', reelsRouter);
 app.use('/api', activityRouter);
@@ -120,7 +122,6 @@ app.get('/admin/api/config-status', requireAdmin, (req, res) => { const has = k 
 if (process.env.DEV_TEST_MODE === '1' && process.env.NODE_ENV !== 'production') {
   const multer = require('multer'); const os = require('os'); const { runTestJob } = require('./lib/pipeline');
   const tmp = process.env.TMP_DIR || path.join(os.tmpdir(), 'snipoclips'); fs.mkdirSync(tmp, { recursive: true }); const up = multer({ dest: tmp, limits: { fileSize: 1024 * 1024 * 1024 } });
-  const outDir = path.join(__dirname, 'public', 'test-clips'); fs.mkdirSync(outDir, { recursive: true });
   app.post('/api/test-clip', up.single('video'), async (req, res) => { try { const source = { filePath: req.file ? req.file.path : null, videoUrl: req.body.videoUrl || null }; if (!source.filePath && !source.videoUrl) return res.status(400).json({ error: 'Upload a file or paste a URL' }); res.json(await runTestJob(source, outDir)); } catch (e) { res.status(500).json({ error: String(e.message || e).slice(0, 400) }); } });
 }
 
