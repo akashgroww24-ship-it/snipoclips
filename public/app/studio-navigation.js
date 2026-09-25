@@ -95,6 +95,7 @@
   dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close();});
   let focusTimer;
   function locate(t){
+    if(t[2]==='Start'||t[2]==='Presets')one('.hero').style.display='';
     if(t[2]==='Options'||t[2]==='Effects'){one('.hero').style.display='';one('#panel').classList.add('open');one('#opt-btn').setAttribute('aria-expanded','true');}
     if(t[2]==='Reels'&&t[0]!=='reels'&&!one('#reel-modal')?.classList.contains('on'))one('#reel-open')?.click();
     if(t[0]==='music-file'){const source=one('#reel-music-mode');source.value='upload';source.dispatchEvent(new Event('change',{bubbles:true}));}
