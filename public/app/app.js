@@ -208,6 +208,7 @@ function applyMe(m){
 }
 
 let clips=[];
+let folderCategory=location.hash==='#reels'?'reels':'all', openFolder=null;
 async function load(){ try{
   if(PREVIEW){ clips=FIX.clips; draw(); return; }
   clips=(await api('/api/clips')).clips||[]; draw();
@@ -221,14 +222,47 @@ async function load(){ try{
 } }
 function skeletons(){ $('#grid').innerHTML='<div class="skel"></div>'.repeat(4); }
 function draw(){ const q=$('#q').value.trim().toLowerCase();
-  const list=q?clips.filter(c=>(c.title||'').toLowerCase().indexOf(q)>-1):clips;
+  const folders=new Map();
+  clips.forEach(c=>{
+    const type=c.edit&&c.edit.type==='reel'?'reels':'shorts';
+    const id=String(c.job_id||c.id||'unknown');
+    const key=type+':'+id;
+    if(!folders.has(key)) folders.set(key,{key,type,items:[],date:c.created_at});
+    folders.get(key).items.push(c);
+  });
+  const all=[...folders.values()].sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
+  const visible=all.filter(f=>folderCategory==='all'||f.type===folderCategory);
+  const current=visible.find(f=>f.key===openFolder);
+  if(openFolder&&!current) openFolder=null;
+  $('#projects-title').textContent=current?(current.type==='reels'?'AI Reel':'Shorts folder'):'Your folders';
+  $('#projects-count').textContent=current?`${current.items.length} ${current.items.length===1?'video':'videos'}`:`${visible.length} ${visible.length===1?'folder':'folders'}`;
+  $('#folder-nav').innerHTML=`<button type="button" class="folder-tab ${folderCategory==='all'?'active':''}" data-category="all">All folders</button>
+    <button type="button" class="folder-tab ${folderCategory==='shorts'?'active':''}" data-category="shorts">Shorts</button>
+    <button type="button" class="folder-tab ${folderCategory==='reels'?'active':''}" data-category="reels">AI Reels</button>`+
+    (current?'<button type="button" class="folder-back" id="folder-back">← Back to folders</button>':'');
+  $$('#folder-nav [data-category]').forEach(b=>b.onclick=()=>{folderCategory=b.dataset.category;openFolder=null;draw();});
+  if(current) $('#folder-back').onclick=()=>{openFolder=null;draw();};
+  const list=current ? current.items.filter(c=>!q||(c.title||'').toLowerCase().includes(q)) :
+    visible.filter(f=>!q||f.items.some(c=>(c.title||'').toLowerCase().includes(q)) ||
+      (f.type==='reels'?'AI Reel':'Shorts').toLowerCase().includes(q));
   if(!list.length){ $('#grid').innerHTML=`<div class="empty">
     <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="m10 9 5 3-5 3z"/></svg>
-    <p>${q?'No clips match that search':'No projects yet'}</p>
-    <small>${q?'Try another word.':'Paste a video link above to make your first clip.'}</small></div>`; return; }
-  $('#grid').innerHTML=list.map(card).join('');
+    <p>${q?'Nothing matches that search':current?'No clips in this folder':'No folders yet'}</p>
+    <small>${q?'Try another word.':'Create Shorts above or make an AI Reel to see it here.'}</small></div>`; return; }
+  $('#grid').innerHTML=current?list.map(card).join(''):list.map(folderCard).join('');
+  $$('.folder-card').forEach(el=>el.onclick=()=>{openFolder=el.dataset.folder;$('#q').value='';draw();});
   $$('.card').forEach(k=>{const v=k.querySelector('video');
-    k.onmouseenter=()=>v.play().catch(()=>{}); k.onmouseleave=()=>{v.pause();v.currentTime=0}; }); }
+    if(v){k.onmouseenter=()=>v.play().catch(()=>{}); k.onmouseleave=()=>{v.pause();v.currentTime=0};} }); }
+function folderCard(f){
+  const first=f.items[0], reel=f.type==='reels';
+  const name=reel?(first.title||'AI Reel'):`Shorts · ${f.date?new Date(f.date).toLocaleDateString():'Project'}`;
+  const subtitle=reel?'Finished AI Reel':`${f.items.length} ${f.items.length===1?'Short':'Shorts'} · ${first.title||'Generated clips'}`;
+  return `<button type="button" class="folder-card" data-folder="${escapeHtml(f.key)}" aria-label="Open ${escapeHtml(name)} folder">
+    <span class="folder-icon" aria-hidden="true">${reel?'▶':'▣'}</span>
+    <span class="folder-detail"><strong>${escapeHtml(name)}</strong><small>${escapeHtml(subtitle)}</small></span>
+    <span class="folder-arrow" aria-hidden="true">→</span></button>`;
+}
+function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function card(c){
   const secs=(c.end_sec!=null&&c.start_sec!=null)?Math.round(c.end_sec-c.start_sec):null;
   const dur=secs!=null?`${Math.floor(secs/60)}:${String(secs%60).padStart(2,'0')}`:'';
