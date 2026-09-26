@@ -109,6 +109,8 @@ button,input{font-family:inherit}
   background:rgba(10,6,20,.72);border:1.5px dashed var(--line-2);border-radius:var(--r-md);
   color:var(--text-2);font-size:13.5px;cursor:pointer;transition:all var(--t)}
 .drop:hover,.drop.over{border-color:var(--magenta);color:var(--text);background:rgba(229,73,200,.06)}
+.source-note{text-align:center;color:var(--text-3);font-size:11.5px;line-height:1.45;margin:7px 0 0}
+.source-note strong{color:var(--text-2);font-weight:600}
 .opts{display:flex;align-items:center;gap:8px;margin-top:9px;padding-top:8px;border-top:1px solid var(--line)}
 .opt-btn{background:none;border:none;color:var(--text-3);font-size:12.5px;cursor:pointer;
   display:flex;align-items:center;gap:6px;padding:2px 0;transition:color var(--t)}

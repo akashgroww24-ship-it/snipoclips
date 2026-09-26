@@ -78,25 +78,26 @@
       <div class="hero-in">
         <button class="hero-x" id="hero-x" aria-label="Hide">&times;</button>
         <h2>Open Clips</h2>
-        <p class="sub">Drop a video link below to get your clips</p>
+        <p class="sub">Upload a video you own — no proxy or downloader service</p>
 
         <div class="seg" role="tablist">
-          <button id="t-url" class="on" role="tab" aria-selected="true">Paste link</button>
-          <button id="t-file" role="tab" aria-selected="false">Upload file</button>
+          <button id="t-file" class="on" role="tab" aria-selected="true">Upload file</button>
+          <button id="t-url" role="tab" aria-selected="false">Direct file link</button>
         </div>
 
         <div class="row">
-          <label class="field" id="f-url">
+          <label class="field" id="f-url" style="display:none">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5"/></svg>
-            <input id="url" type="url" placeholder="Drop a video link…" autocomplete="off">
+            <input id="url" type="url" placeholder="https://cdn.example.com/video.mp4" autocomplete="off">
           </label>
-          <div class="drop" id="drop" style="display:none" tabindex="0" role="button">
+          <div class="drop" id="drop" tabindex="0" role="button">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 15V4m-4 4 4-4 4 4"/><path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>
             <span id="drop-txt">Choose a video · up to 1GB</span>
-            <input type="file" id="file" accept="video/*" hidden>
+            <input type="file" id="file" accept="video/mp4,video/quicktime,video/webm,video/x-matroska,.mp4,.mov,.webm,.mkv,.m4v" hidden>
           </div>
           <button class="btn prim go" id="go">Get clips in 1 click</button>
         </div>
+        <p class="source-note" id="source-note">Your file is processed temporarily and is not kept as an original upload.</p>
 
         <div class="opts">
           <button class="opt-btn" id="opt-btn" aria-expanded="false">

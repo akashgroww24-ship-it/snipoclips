@@ -7,7 +7,6 @@ admin dashboard, and the AI clip pipeline. One Node server runs all of it.
 
 1) Install system tools on the server
    sudo apt install ffmpeg          # required (cutting/reframing/captions)
-   pip install yt-dlp               # optional (for "paste a URL" imports)
 
 2) Create a Supabase project (free tier is fine)
    - In Supabase → SQL Editor, paste & run  supabase/schema.sql
@@ -25,7 +24,7 @@ admin dashboard, and the AI clip pipeline. One Node server runs all of it.
 
 4) Run
    npm install
-   npm run check      # confirms every key + ffmpeg/yt-dlp are ready
+   npm run check      # confirms every key + ffmpeg are ready
    npm test           # runs the feature unit tests (quota, captions, chunking)
    npm start          # serves everything on PORT
 
@@ -70,7 +69,7 @@ and uploads default to Private until Google verifies the app.
 - /            marketing site
 - /blog/       blog (SEO)
 - /login       sign in / sign up / forgot password (Supabase)
-- /app         the studio: upload or paste URL, watch jobs, download clips
+- /app         the studio: upload a file or paste a direct video-file URL
 - /dashboard   admin ops dashboard (separate admin login)
 - /api/...     the app + AI pipeline API
 
@@ -91,7 +90,7 @@ server-side before each job; usage is recorded after.
 
 ## Honest scope — what's a starter vs done
 - Pipeline is real and runnable, but I could not execute a full job here (needs
-  your keys + ffmpeg/yt-dlp + a real video). Test end-to-end after you add keys.
+  your keys + ffmpeg + a real video). Test end-to-end after you add keys.
 - Reframe is a center-crop to 9:16; true speaker tracking is a later upgrade.
 - Captions are line-level; word-by-word karaoke is a later upgrade.
 - In-process worker (fine for low volume). For scale, move jobs to BullMQ+Redis

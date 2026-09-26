@@ -141,6 +141,11 @@ app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public/app/lo
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/dashboard.html')));
 app.get('/health', (req, res) => res.json({ ok: true, ts: Date.now() }));
 app.use((req, res) => res.status(404).send('Not found'));
-app.use((err, req, res, next) => { console.error(err.message); res.status(500).json({ error: 'Something went wrong' }); });
+app.use((err, req, res, next) => {
+  console.error(err.message);
+  if (err && err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ error: 'Video is larger than the configured upload limit.' });
+  if (err && err.code === 'UNSUPPORTED_MEDIA_TYPE') return res.status(415).json({ error: err.message });
+  res.status(500).json({ error: 'Something went wrong' });
+});
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Snipoclips app on :${PORT}`));

@@ -14,22 +14,31 @@ function toast(t,m,k='ok'){ const e=document.createElement('div'); e.className='
   e.querySelector('button').onclick=()=>e.remove(); $('#toasts').appendChild(e); setTimeout(()=>e.remove(),7000); }
 function human(raw,st){ const s=String(raw||'').toLowerCase();
   if(st===401||st===403) return ['Please sign in','Your session expired — sign in and try again.'];
+  if(st===413||s.indexOf('larger than')>-1) return ['Video is too large',raw];
+  if(st===415) return ['Unsupported video file',raw];
   if(st===402||s.indexOf('limit')>-1||s.indexOf('plan')>-1) return ['Not enough quota',raw];
   if(st===429) return ['Server is busy','Too many videos at once. Try again in a minute.'];
-  if(s.indexOf('not allowed')>-1||s.indexOf('valid video')>-1) return ["That link won't work",'Paste a public video URL.'];
+  if(st===422||s.indexOf('proxy or bypass')>-1||s.indexOf('platform')>-1) return ['Upload the original video',raw];
+  if(s.indexOf('not allowed')>-1||s.indexOf('valid video')>-1||s.indexOf('direct video')>-1||
+     s.indexOf('web page instead')>-1||s.indexOf('video host')>-1||s.indexOf('private or reserved')>-1||
+     s.indexOf('redirected too many')>-1||s.indexOf('http ')>-1) return ["That link won't work",raw||'Paste a direct video-file URL.'];
   if(st>=500) return ["We couldn't process this video",'Something failed on our side — try again.'];
   return ["We couldn't process this video",raw||'Check the link and try again.']; }
 
 /* tabs */
-let mode='url', picked=null;
+let mode='file', picked=null;
 function setMode(m){ mode=m;
   $('#t-url').classList.toggle('on',m==='url'); $('#t-file').classList.toggle('on',m==='file');
   $('#t-url').setAttribute('aria-selected',m==='url'); $('#t-file').setAttribute('aria-selected',m==='file');
-  $('#f-url').style.display=m==='url'?'':'none'; $('#drop').style.display=m==='file'?'':'none'; }
+  $('#f-url').style.display=m==='url'?'':'none'; $('#drop').style.display=m==='file'?'':'none';
+  const note=$('#source-note'); if(note) note.innerHTML=m==='file'
+    ? 'Your file is processed temporarily and is not kept as an original upload.'
+    : '<strong>Direct files only:</strong> use a URL that returns MP4, MOV, WebM or MKV — not a YouTube/social page.'; }
 $('#t-url').onclick=()=>setMode('url'); $('#t-file').onclick=()=>setMode('file');
 
 function setFile(f){ if(!f) return;
-  if(!f.type.startsWith('video/')) return toast('Not a video file','Choose an MP4, MOV or WebM.','err');
+  const ext=(f.name.match(/\.[^.]+$/)||[''])[0].toLowerCase();
+  if(!f.type.startsWith('video/')&&!['.mp4','.mov','.webm','.mkv','.m4v'].includes(ext)) return toast('Not a video file','Choose an MP4, MOV, WebM or MKV.','err');
   if(f.size>1073741824) return toast('File too large','Maximum upload size is 1GB.','err');
   picked=f; $('#drop-txt').textContent=f.name+' · '+(f.size/1048576).toFixed(1)+' MB'; setMode('file'); }
 $('#drop').onclick=()=>$('#file').click();
@@ -225,7 +234,7 @@ function draw(){ const q=$('#q').value.trim().toLowerCase();
   if(!list.length){ $('#grid').innerHTML=`<div class="empty">
     <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="m10 9 5 3-5 3z"/></svg>
     <p>${q?'No clips match that search':'No projects yet'}</p>
-    <small>${q?'Try another word.':'Paste a video link above to make your first clip.'}</small></div>`; return; }
+    <small>${q?'Try another word.':'Upload a video above to make your first clip.'}</small></div>`; return; }
   $('#grid').innerHTML=list.map(card).join('');
   $$('.card').forEach(k=>{const v=k.querySelector('video');
     k.onmouseenter=()=>v.play().catch(()=>{}); k.onmouseleave=()=>{v.pause();v.currentTime=0}; }); }
@@ -258,8 +267,8 @@ function card(c){
 $('#q').oninput=draw;
 
 /* processing — real stages only */
-const S=[['queued','Video imported'],['download','Media downloaded'],['transcribe','Transcript generated'],
-  ['highlights','Finding viral moments'],['rendering','Generating clips'],['done','Clips ready']];
+const S=[['queued','Video queued'],['fetching','Importing video'],['transcribing','Generating transcript'],
+  ['selecting','Finding viral moments'],['rendering','Generating clips'],['done','Clips ready']];
 function steps(stage){ const i=Math.max(0,S.findIndex(x=>x[0]===stage));
   $('#proc-b').style.width=Math.round(i/(S.length-1)*100)+'%';
   $('#proc-n').textContent=S[i]?S[i][1]+'…':'Working…';
@@ -268,16 +277,17 @@ function steps(stage){ const i=Math.max(0,S.findIndex(x=>x[0]===stage));
 let poll=null;
 $('#go').onclick=async()=>{
   const u=$('#url').value.trim();
-  if(!picked&&!u) return toast('Nothing to clip yet','Paste a video link or choose a file first.','err');
+  if(mode==='file'&&!picked) return toast('Choose a video','Select an MP4, MOV, WebM or MKV file first.','err');
+  if(mode==='url'&&!u) return toast('Paste a direct file link','Use a URL that returns the video file itself.','err');
   const fd=new FormData();
-  if(picked) fd.append('video',picked); else fd.append('videoUrl',u);
+  if(mode==='file') fd.append('video',picked); else fd.append('videoUrl',u);
   fd.append('ratio',$('#ratio').value); fd.append('duration',$('#duration').value);
   fd.append('captionStyle',$('#captionStyle').value);
   fd.append('clipStyle',($('#clipStyle')||{}).value||'clean');
   if($('#count').value) fd.append('count',$('#count').value);
   if($('#language').value!=='auto') fd.append('language',$('#language').value);
   Object.entries(st).forEach(([k,v])=>fd.append(k,v?'1':'0'));
-  const g=$('#go'); g.disabled=true; g.textContent=picked?'Uploading…':'Starting…';
+  const g=$('#go'); g.disabled=true; g.textContent=mode==='file'?'Uploading…':'Importing…';
   $('#proc').classList.add('on'); steps('queued');
   try{ const _t = await authToken();
     const r=await fetch('/api/jobs',{
@@ -378,6 +388,7 @@ function clampCam(c){ const L=CAM_LIMITS;
            ry:Math.max(-L.maxRot,Math.min(L.maxRot,c.ry||0)) }; }
 
 function runReferenceDemo(){
+  setMode('url');
   const cam=$('#cam'), url=$('#url'), go=$('#go'), grid=$('#grid');
   const text=FIX.demoUrl;
   document.body.classList.add('demo');

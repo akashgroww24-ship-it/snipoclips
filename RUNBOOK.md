@@ -24,7 +24,7 @@ unit-tested, but clip *quality* and the *live* chain can only be confirmed by a 
 ```
 npm run check
 ```
-Every key and ffmpeg/yt-dlp should show ✓. Fix any ✗ before continuing.
+Every key and ffmpeg should show ✓. Fix any ✗ before continuing.
 
 ## Step 2 — Fast end-to-end smoke test (≈1 minute)
 Grab a **short** clip with speech (30–90s, `.mp4`) and run:
