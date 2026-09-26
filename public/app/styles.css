@@ -176,6 +176,18 @@ button,input{font-family:inherit}
   background:var(--surf-1);border:1px solid var(--line);color:#C2B7DC;font-size:13px;cursor:pointer}
 .ctl input{background:none;border:none;outline:none;color:var(--text);font-size:13px;width:120px}
 .ctl input::placeholder{color:var(--text-3)}
+.folder-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 18px}
+.folder-tab,.folder-back{font:inherit;font-size:13px;color:var(--text-2);background:var(--surf-1);border:1px solid var(--line);border-radius:9px;padding:8px 13px;cursor:pointer}
+.folder-tab.active{color:#fff;border-color:var(--magenta);background:rgba(229,73,200,.16)}
+.folder-back{margin-left:auto;color:#fff}
+.folder-tab:hover,.folder-back:hover,.folder-card:hover{border-color:var(--magenta)}
+.folder-tab:focus-visible,.folder-back:focus-visible,.folder-card:focus-visible{outline:2px solid var(--magenta);outline-offset:3px}
+.folder-card{font:inherit;text-align:left;display:flex;align-items:center;gap:13px;min-height:94px;padding:16px;border-radius:12px;color:#fff;background:rgba(28,18,48,.7);border:1px solid var(--line);cursor:pointer;min-width:0;transition:border-color var(--t2),transform var(--t2)}
+.folder-card:hover{transform:translateY(-3px)}
+.folder-icon{font-size:21px;display:grid;place-items:center;flex:none;width:46px;height:46px;border-radius:12px;background:rgba(229,73,200,.15);color:var(--magenta)}
+.folder-detail{min-width:0;display:grid;gap:6px}.folder-detail strong,.folder-detail small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.folder-detail strong{font-size:14px}.folder-detail small{font-size:12px;color:var(--text-2)}
+.folder-arrow{margin-left:auto;color:var(--text-2)}
 .grid{display:flex;flex-wrap:wrap;gap:18px}
 .grid>*{flex:0 0 calc(25% - 13.5px)}
 @supports(display:grid){.grid{display:grid;grid-template-columns:repeat(4,1fr)}.grid>*{flex:initial}}
