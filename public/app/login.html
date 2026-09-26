@@ -30,6 +30,10 @@
   .link{background:none;border:0;color:var(--muted);font:inherit;font-size:13px;cursor:pointer;margin-top:14px;text-decoration:underline;display:block;text-align:center;width:100%}
   .msg{font-size:13px;min-height:18px;margin-top:12px;text-align:center}
   .err{color:var(--magenta)}.ok{color:var(--green)}
+  #existingAccount{width:min(360px,calc(100vw - 32px));border:1px solid var(--violet-c);border-radius:18px;padding:25px;background:var(--panel);color:var(--text);box-shadow:0 20px 70px #0009}
+  #existingAccount::backdrop{background:#05030bc9}#existingAccount p{font-size:14px;color:var(--muted);line-height:1.6}
+  #existingAccount .actions{display:flex;gap:9px;margin-top:20px}#existingAccount .actions button{flex:1;border-radius:9px;border:1px solid var(--line2);padding:11px;background:var(--panel2);color:var(--text);font:600 13px Inter,system-ui,sans-serif;cursor:pointer}
+  #existingAccount .actions #existingSignIn{background:var(--grad);border:0;color:#fff}
   h2{font-family:'Plus Jakarta Sans';font-size:20px;margin:0 0 4px;text-align:center}
   .sub{color:var(--muted);font-size:13px;text-align:center;margin:0 0 18px}
 </style>
@@ -57,6 +61,11 @@
     <div class="msg" id="msg"></div>
   </div>
 </div>
+<dialog id="existingAccount" aria-labelledby="existingTitle" aria-describedby="existingDescription">
+  <h2 id="existingTitle">Account already exists</h2>
+  <p id="existingDescription">This email is already registered. Sign in with your password, or use Continue with Google if that’s how you created your account.</p>
+  <div class="actions"><button type="button" id="existingDismiss">Close</button><button type="button" id="existingSignIn">Sign in</button></div>
+</dialog>
 
 <script>
 let supa, mode='in';
@@ -150,6 +159,13 @@ function setMode(m){ mode=m;
   $('pass').setAttribute('autocomplete', m==='in'?'current-password':'new-password');
   msg('');
 }
+function showExistingAccount(){
+  setMode('in');
+  msg('This email already has an account. Sign in instead.');
+  $('existingAccount').showModal();
+}
+$('existingDismiss').onclick=()=>$('existingAccount').close();
+$('existingSignIn').onclick=()=>{ $('existingAccount').close(); $('pass').focus(); };
 
 // --- client-side brute-force limiter: 5 failed sign-ins -> 60s lockout ---
 let _fails=0,_lockUntil=0,_ctTimer=null;
@@ -180,7 +196,13 @@ $('submit').onclick=async()=>{
       const { data, error }=await supa.auth.signUp({
         email, password, options:{ emailRedirectTo:location.origin+'/app' }
       });
-      if(error) return msg(error.message);
+      if(error){
+        if(error.code==='user_already_exists'||/already (registered|exists)/i.test(error.message||''))return showExistingAccount();
+        return msg(error.message);
+      }
+      // With email confirmation enabled, Supabase may return an obfuscated
+      // user instead of an error for an existing account (no new identity).
+      if(data?.user && Array.isArray(data.user.identities) && data.user.identities.length===0)return showExistingAccount();
       if(data && data.session){ location.href = nextUrl(); return; }
       setMode('in');
       msg('Account created. Check your email to confirm; the link will open your studio.', true);
