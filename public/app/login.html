@@ -117,13 +117,17 @@ async function init(){
   supa=window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
   const { data:{ session } } = await supa.auth.getSession();
   if(session){
-    // A browser session is not enough — the server must accept it too,
-    // otherwise /app bounces straight back here and we loop.
+    // /api/me requires this Supabase token, even when a browser session exists.
     try{
-      const r = await fetch('/api/me', { credentials:'include' });
+      const r = await fetch('/api/me', {
+        credentials:'include',
+        headers:{ Authorization:'Bearer '+session.access_token, accept:'application/json' }
+      });
       if (r.ok) { location.href = nextUrl(); return; }
-      msg('Your session expired on the server. Please sign in again.');
-      try{ await supa.auth.signOut(); }catch(e){}
+      if (r.status===401 || r.status===403){
+        msg('Your session expired. Please sign in again.');
+        try{ await supa.auth.signOut(); }catch(e){}
+      }else msg('The server is temporarily unavailable. Please try again in a moment.');
     }catch(e){
       msg("Can't reach the server. Try again in a moment.");
     }
@@ -169,7 +173,8 @@ $('submit').onclick=async()=>{
   try{
     if(mode==='in'){
       const { error }=await supa.auth.signInWithPassword({ email, password });
-      if(error){ _fails++; if(_fails>=5){ _fails=0; _lockUntil=Date.now()+60000; _locked(); return; } return msg(error.message); }
+      if(error){ _fails++; if(_fails>=5){ _fails=0; _lockUntil=Date.now()+60000; _locked(); return; }
+        return msg(error.message+(error.message==='Invalid login credentials'?' If you signed up with Google, use Continue with Google.':'')); }
       _fails=0; location.href = nextUrl();
     }else{
       const { data, error }=await supa.auth.signUp({ email, password });
