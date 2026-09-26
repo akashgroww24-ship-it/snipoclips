@@ -157,8 +157,8 @@ router.get('/jobs/:id', requireUser, async (req, res) => {
 
 // All of the user's clips.
 router.get('/clips', requireUser, async (req, res) => {
-  const COLS_NEW = 'id,title,score,storage_path,start_sec,end_sec,created_at,master_path,edit,social_caption,hashtags';
-  const COLS_OLD = 'id,title,score,storage_path,start_sec,end_sec,created_at,master_path,edit';
+  const COLS_NEW = 'id,job_id,title,score,storage_path,start_sec,end_sec,created_at,master_path,edit,social_caption,hashtags';
+  const COLS_OLD = 'id,job_id,title,score,storage_path,start_sec,end_sec,created_at,master_path,edit';
   let { data: clips, error } = await admin.from('clips').select(COLS_NEW).eq('user_id', req.user.id).order('created_at', { ascending: false }).limit(200);
   if (error) {  // caption/hashtags migration not run yet — fall back so the list still works
     const r = await admin.from('clips').select(COLS_OLD).eq('user_id', req.user.id).order('created_at', { ascending: false }).limit(200);
