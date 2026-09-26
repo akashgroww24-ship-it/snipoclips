@@ -138,12 +138,13 @@
 
   <section class="sec" id="projects" style="position:relative">
     <div class="sec-h">
-      <h2>All projects</h2><span class="tagp">All</span>
+      <h2 id="projects-title">Your folders</h2><span class="tagp" id="projects-count">All</span>
       <div class="sec-r">
         <div class="ctl" id="sort">Newest <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m1 1 4 4 4-4"/></svg></div>
         <label class="ctl"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search"></label>
       </div>
     </div>
+    <nav class="folder-nav" id="folder-nav" aria-label="Clip folders"></nav>
     <div class="grid" id="grid">
       <div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div>
     </div>
@@ -161,4 +162,3 @@
 <script src="studio-navigation.js"></script>
 </body>
 </html>
-
