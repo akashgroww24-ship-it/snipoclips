@@ -96,6 +96,12 @@ const TOOLS=[['M7 4v16M17 4v16M7 9h10M7 15h10','Long to shorts',['karaoke','hook
 $$('.tool').forEach((b,i)=>{ const on=TOOLS[i]?TOOLS[i][2]:[];
   b.onclick=()=>{ $$('.tool').forEach(x=>x.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed','true');
     T.forEach(([k])=>st[k]=on.indexOf(k)>-1); $$('#pills .pill').forEach((p,n)=>p.setAttribute('aria-pressed',st[T[n][0]])); cnt(); }; });
+const toolDescriptions=['Find highlights in long videos','Time captions to speech','Pick the strongest moments',
+  'Caption mixed Hindi and English','Add supporting footage','Improve speech or balance background sound'];
+$$('.tool').slice(0,toolDescriptions.length).forEach((b,i)=>{
+  const d=document.createElement('span');d.className='tool-desc';d.textContent=toolDescriptions[i];b.appendChild(d);
+  b.title=toolDescriptions[i];
+});
 $('#pv').onclick=()=>$('#track').scrollBy({left:-250,behavior:'smooth'});
 $('#nx').onclick=()=>$('#track').scrollBy({left:250,behavior:'smooth'});
 
@@ -208,6 +214,7 @@ function applyMe(m){
 }
 
 let clips=[];
+let sortOrder=localStorage.getItem('sc_sort_order')==='oldest'?'oldest':'newest';
 let folderCategory=location.hash==='#reels'?'reels':'all', openFolder=null, renamingFolder=null;
 async function load(){ try{
   if(PREVIEW){ clips=FIX.clips; draw(); return; }
@@ -230,7 +237,11 @@ function draw(){ const q=$('#q').value.trim().toLowerCase();
     if(!folders.has(key)) folders.set(key,{key,type,items:[],date:c.created_at});
     folders.get(key).items.push(c);
   });
-  const all=[...folders.values()].sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
+  const newestFirst=sortOrder==='newest';
+  const byDate=(a,b)=>newestFirst?new Date(b.created_at||b.date||0)-new Date(a.created_at||a.date||0):new Date(a.created_at||a.date||0)-new Date(b.created_at||b.date||0);
+  const all=[...folders.values()].sort(byDate);
+  $('#sort').textContent=newestFirst?'Newest first':'Oldest first';
+  $('#sort').setAttribute('aria-label','Sort folders and clips, '+(newestFirst?'newest':'oldest')+' first. Click to reverse.');
   const visible=all.filter(f=>folderCategory==='all'||f.type===folderCategory);
   const current=visible.find(f=>f.key===openFolder);
   if(openFolder&&!current) openFolder=null;
@@ -245,7 +256,7 @@ function draw(){ const q=$('#q').value.trim().toLowerCase();
     $('#folder-back').onclick=()=>{openFolder=null;draw();};
     $('#folder-rename-current').onclick=()=>{openFolder=null;startFolderRename(current.key);};
   }
-  const list=current ? current.items.filter(c=>!q||(c.title||'').toLowerCase().includes(q)) :
+  const list=current ? current.items.filter(c=>!q||(c.title||'').toLowerCase().includes(q)).sort(byDate) :
     visible.filter(f=>!q||folderTitle(f).toLowerCase().includes(q)||f.items.some(c=>(c.title||'').toLowerCase().includes(q)) ||
       (f.type==='reels'?'AI Reel':'Shorts').toLowerCase().includes(q));
   if(!list.length){ $('#grid').innerHTML=`<div class="empty">
@@ -260,6 +271,7 @@ function draw(){ const q=$('#q').value.trim().toLowerCase();
     el.onsubmit=e=>{e.preventDefault();saveFolderRename(el);};
     el.onkeydown=e=>{if(e.key==='Escape'){renamingFolder=null;draw();}};
   });
+  $$('.youtube-upload').forEach(b=>b.onclick=()=>uploadClipToYouTube(b));
   $$('.card').forEach(k=>{const v=k.querySelector('video');
     if(v){k.onmouseenter=()=>v.play().catch(()=>{}); k.onmouseleave=()=>{v.pause();v.currentTime=0};} }); }
 function folderTitle(f){
@@ -315,9 +327,41 @@ function card(c){
     ${c.position?'<span class="scrub"><i style="width:34%"></i></span>':''}<span class="menu">&#8942;</span></div>
     <div class="in"><div class="t">${(c.title||'Untitled').replace(/</g,'&lt;')}</div>
     <div class="m"><span>${c.created_at?new Date(c.created_at).toLocaleDateString():''}</span>
-    ${c.url?`<a href="${c.url}" download onclick="event.stopPropagation()">Download</a>`:''}</div></div></article>`;
+    ${c.url?`<a href="${c.url}" download onclick="event.stopPropagation()">Download</a>`:''}
+    ${youtubeConnected&&c.id?`<button type="button" class="youtube-upload" data-clip="${escapeHtml(c.id)}" title="Upload this clip privately to your connected YouTube channel">Upload privately</button>`:''}</div></div></article>`;
+}
+let youtubeConnected=false;
+async function loadSocial(){
+  const label=$('#youtube-state'), connect=$('#youtube-connect'), disconnect=$('#youtube-disconnect');
+  try{
+    const state=await api('/api/youtube/status',{cache:'no-store'});
+    youtubeConnected=!!state.connected;
+    label.textContent=state.connected?'Connected: '+(state.channel?.channel_title||'YouTube channel'):
+      state.configured?'No YouTube channel connected.':'YouTube publishing is not available yet. You can still download your clips.';
+    connect.hidden=!state.configured||state.connected;
+    disconnect.hidden=!state.connected;
+    draw();
+  }catch(e){label.textContent='Could not check YouTube connection. Refresh to retry.';}
+}
+$('#youtube-connect').onclick=async()=>{
+  const b=$('#youtube-connect');b.disabled=true;
+  try{const d=await api('/api/youtube/connect',{method:'POST'});if(!d.url)throw new Error('No authorization URL');location.assign(d.url);}
+  catch(e){b.disabled=false;toast('Could not connect YouTube','Please try again later.','err');}
+};
+$('#youtube-disconnect').onclick=async()=>{
+  if(!confirm('Disconnect your YouTube channel from Snipo Clips?'))return;
+  const b=$('#youtube-disconnect');b.disabled=true;
+  try{await api('/api/youtube/disconnect',{method:'POST'});await loadSocial();toast('YouTube disconnected','Your channel is no longer connected.');}
+  catch(e){toast('Could not disconnect','Please try again.','err');}finally{b.disabled=false;}
+};
+async function uploadClipToYouTube(button){
+  button.disabled=true;
+  try{await api('/api/youtube/upload',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({clipId:button.dataset.clip,privacy:'private'})});
+    toast('Uploaded privately','Your clip is available in YouTube Studio.');
+  }catch(e){toast('YouTube upload failed','Please check your channel connection and try again.','err');button.disabled=false;}
 }
 $('#q').oninput=draw;
+$('#sort').onclick=()=>{sortOrder=sortOrder==='newest'?'oldest':'newest';localStorage.setItem('sc_sort_order',sortOrder);draw();};
 
 /* processing — real stages only */
 const S=[['queued','Video imported'],['download','Media downloaded'],['transcribe','Transcript generated'],
@@ -336,6 +380,7 @@ $('#go').onclick=async()=>{
   fd.append('ratio',$('#ratio').value); fd.append('duration',$('#duration').value);
   fd.append('captionStyle',$('#captionStyle').value);
   fd.append('clipStyle',($('#clipStyle')||{}).value||'clean');
+  fd.append('audioMode',$('#audioMode').value);
   if($('#count').value) fd.append('count',$('#count').value);
   if($('#language').value!=='auto') fd.append('language',$('#language').value);
   Object.entries(st).forEach(([k,v])=>fd.append(k,v?'1':'0'));
@@ -348,27 +393,46 @@ $('#go').onclick=async()=>{
     });
     const d=await r.json().catch(()=>({}));
     if(!r.ok){ const [t,m]=human(d.error,r.status); throw Object.assign(new Error(m),{t}); }
-    g.textContent='Processing…'; toast('Processing started',"We'll show your clips here when they're ready."); watch(d.jobId);
+    g.textContent='Processing…'; sessionStorage.setItem('sc_active_job',d.jobId);
+    toast('Processing started',"We'll show each clip here as it becomes ready."); watch(d.jobId);
   }catch(e){ toast(e.t||"We couldn't process this video",e.message,'err'); console.error('[jobs]',e);
     $('#proc').classList.remove('on'); reset(); } };
-function watch(id){ clearInterval(poll); let n=0;
-  poll=setInterval(async()=>{ try{
+let activeJobId=null;
+function watch(id){ clearTimeout(poll); activeJobId=id; let n=0, lastCount=0, failures=0;
+  $('#proc').classList.add('on'); $('#proc-t').textContent='Analyzing your video…';
+  const tick=async()=>{ if(activeJobId!==id)return; try{
     const _pt = await authToken();
     const r=await fetch('/api/jobs/'+id,{
-      credentials:'include',
+      credentials:'include',cache:'no-store',
       headers: _pt ? { Authorization: 'Bearer ' + _pt, accept:'application/json' } : { accept:'application/json' }
     });
-    if(r.status===401||r.status===403){ clearInterval(poll); redirectToLogin(); return; }
+    if(r.status===401||r.status===403){activeJobId=null;redirectToLogin();return;}
+    if(r.status===404){activeJobId=null;sessionStorage.removeItem('sc_active_job');reset();return;}
+    if(!r.ok)throw new Error('Job status unavailable');
     const d=await r.json(); const j=d.job||{};
+    failures=0;
     steps(j.stage||'queued');
-    if(j.status==='done'||(d.clips&&d.clips.length)){ clearInterval(poll); steps('done');
-      $('#proc-t').textContent=((d.clips&&d.clips.length)||0)+' clips ready';
-      toast('Clips ready','Scroll down to watch and download them.'); reset(); load(); me(); }
-    else if(j.status==='error'){ clearInterval(poll); const [t,m]=human(j.error,500);
-      toast(t,m,'err'); console.error('[job]',j.error); $('#proc').classList.remove('on'); reset(); }
-    else if(++n>96){ clearInterval(poll);
-      toast('Still rendering','Taking longer than expected — the render may have run out of memory. Check your server logs.','err'); reset(); }
-  }catch(e){} },5000); }
+    const count=(d.clips||[]).length;
+    if(count>lastCount){lastCount=count;load();$('#proc-t').textContent=count+' '+(count===1?'clip':'clips')+' ready · more rendering';}
+    if(j.status==='done'){
+      activeJobId=null;sessionStorage.removeItem('sc_active_job');steps('done');
+      $('#proc-t').textContent=count+' '+(count===1?'clip':'clips')+' ready';
+      toast('All clips ready','Scroll down to watch and download them.');reset();load();me();return;
+    }
+    if(j.status==='error'){
+      activeJobId=null;sessionStorage.removeItem('sc_active_job');
+      toast('Clip generation stopped',count?'Your completed clips are available below.':'Please try again.','err');
+      console.error('[job]',j.error);$('#proc').classList.remove('on');reset();load();return;
+    }
+    if(++n>100)$('#proc-n').textContent='Large videos can take longer. You may leave this page; processing continues.';
+  }catch(e){if(++failures===3)$('#proc-n').textContent='Checking the server connection… your job continues in the background.';}
+  finally{if(activeJobId===id)poll=setTimeout(tick,6000);}
+  };tick();
+}
+async function resumeJob(){
+  const id=sessionStorage.getItem('sc_active_job');if(!id)return;
+  $('#go').disabled=true;$('#go').textContent='Processing…';watch(id);
+}
 function reset(){ const g=$('#go'); g.disabled=false; g.textContent='Get clips in 1 click'; }
 
 $('#hero-x').onclick=()=>$('.hero').style.display='none';
@@ -528,5 +592,9 @@ function runReferenceDemo(){
   requestAnimationFrame(frame);
 }
 
-me(); load();
+me(); load(); resumeJob(); loadSocial();
+const ytResult=new URLSearchParams(location.search).get('yt');
+if(ytResult){toast(ytResult==='connected'?'YouTube connected':'Could not connect YouTube',
+  ytResult==='connected'?'Your channel is ready for private uploads.':'Please check your Google permissions and try again.',ytResult==='connected'?'ok':'err');
+  const url=new URL(location.href);url.searchParams.delete('yt');url.searchParams.delete('msg');history.replaceState(null,'',url.pathname+url.search+url.hash);}
 if(DEMO) setTimeout(runReferenceDemo, 600);

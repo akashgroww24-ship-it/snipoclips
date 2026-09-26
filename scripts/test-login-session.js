@@ -51,3 +51,21 @@ test('rejected bearer token signs out the expired session', async () => {
   const r = await run(401);
   assert.equal(r.signOuts, 1);
 });
+
+test('email signup keeps the confirmation message and sends its link to the studio', async () => {
+  const start = html.indexOf("$('submit').onclick=async()=>{");
+  const end = html.indexOf("\n$('forgot').onclick=", start);
+  assert.ok(start >= 0 && end > start);
+  const submit = { onclick:null };
+  let message='', request;
+  const location = { origin:'https://snipoclip.com', href:'/login' };
+  const ctx = { mode:'up', location, console, nextUrl:()=>'/app', _locked:()=>false,
+    $:id=>({submit,email:{value:'new@example.com'},pass:{value:'a-password'}}[id]),
+    msg:text=>{message=text;},setMode:()=>{message='';},
+    supa:{auth:{signUp:async input=>{request=input;return {data:{session:null},error:null};}}} };
+  vm.runInNewContext(html.slice(start,end),ctx);
+  await submit.onclick();
+  assert.equal(request.options.emailRedirectTo,'https://snipoclip.com/app');
+  assert.match(message,/Check your email/);
+  assert.equal(location.href,'/login');
+});

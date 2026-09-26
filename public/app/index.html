@@ -117,6 +117,7 @@
           <option value="meme">Meme</option>
         </select>
           <select class="sel" id="language"><option value="auto">Auto-detect</option><option value="hi">Hindi</option><option value="en">English</option></select>
+          <select class="sel" id="audioMode" aria-label="Audio enhancement mode"><option value="speech">Speech clarity and noise reduction</option><option value="background">Balance background sound</option></select>
           <span id="pills" style="display:contents"></span>
         </div>
       </div>
@@ -140,7 +141,7 @@
     <div class="sec-h">
       <h2 id="projects-title">Your folders</h2><span class="tagp" id="projects-count">All</span>
       <div class="sec-r">
-        <div class="ctl" id="sort">Newest <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m1 1 4 4 4-4"/></svg></div>
+        <button type="button" class="ctl" id="sort" aria-label="Sort folders and clips, newest first">Newest first</button>
         <label class="ctl"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search"></label>
       </div>
     </div>
@@ -149,6 +150,14 @@
       <div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div>
     </div>
     <span class="spark" aria-hidden="true">✦</span>
+  </section>
+  <section class="sec social-panel" id="social-accounts" aria-labelledby="social-heading">
+    <div class="sec-h"><h2 id="social-heading">Social accounts</h2></div>
+    <p>Connect your YouTube channel to upload finished clips privately. This uses a separate YouTube permission from Google sign-in.</p>
+    <div class="social-row"><span id="youtube-state" role="status">Checking YouTube connection…</span>
+      <button type="button" class="btn prim" id="youtube-connect" hidden>Connect YouTube</button>
+      <button type="button" class="btn ghost" id="youtube-disconnect" hidden>Disconnect</button>
+    </div>
   </section>
 </main>
 
