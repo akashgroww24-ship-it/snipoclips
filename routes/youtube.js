@@ -36,12 +36,13 @@ router.get('/youtube/callback', async (req, res) => {
     try { uid = jwt.verify(String(state), process.env.JWT_SECRET).uid; } catch { return done(false, 'invalid state'); }
 
     const tok = await yt.exchangeCode(String(code), yt.redirectUri(req));
-    const channel = await yt.getChannel(tok.access_token).catch(() => null);
+    const channel = await yt.getChannel(tok.access_token);
+    if (!channel) return done(false, 'No YouTube channel found on this Google account');
     const row = {
       user_id: uid,
-      channel_id: channel ? channel.id : null,
-      channel_title: channel ? channel.title : null,
-      channel_thumb: channel ? channel.thumbnail : null,
+      channel_id: channel.id,
+      channel_title: channel.title,
+      channel_thumb: channel.thumbnail,
       enc_access: box.encrypt(tok.access_token),
       expiry: new Date(Date.now() + (tok.expires_in || 3600) * 1000).toISOString(),
       scope: tok.scope || null,
@@ -49,7 +50,8 @@ router.get('/youtube/callback', async (req, res) => {
     };
     // keep any existing refresh token if Google didn't return a new one
     if (tok.refresh_token) row.enc_refresh = box.encrypt(tok.refresh_token);
-    await admin.from('youtube_accounts').upsert(row, { onConflict: 'user_id' });
+    const { error: saveError } = await admin.from('youtube_accounts').upsert(row, { onConflict: 'user_id' });
+    if (saveError) throw new Error('Could not save YouTube connection');
     done(true);
   } catch (e) {
     done(false, (e.message || 'connect failed').slice(0, 120));
