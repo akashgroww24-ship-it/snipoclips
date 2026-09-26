@@ -17,7 +17,8 @@
     ['language','Spoken language','Options','#language','Auto-detect estimates the spoken language. Hindi and English give transcription a language hint; this is not translation.','Choose the language spoken in the source video.'],
     ['karaoke','Karaoke','Effects','@Karaoke','Highlights caption words as they are spoken.','Turn this on in Options before generating.'],
     ['hook','Hook title','Effects','@Hook title','Adds a short opening title to introduce the clip.','Turn this on before generating, then review the title for accuracy.'],
-    ['enhance','Enhance audio','Effects','@Enhance audio','Applies audio enhancement during rendering. Results depend on the recording and cannot restore missing speech.','Enable in Options before generating and listen to the exported result.'],
+    ['enhance','Enhance audio','Effects','@Enhance audio','Enhances the source soundtrack. Speech mode reduces steady background noise; background mode balances music and ambience without separating them from speech.','Enable Enhance audio, then choose the audio mode in Options before generating.'],
+    ['audio-mode','Audio enhancement mode','Options','#audioMode','Speech clarity reduces steady background noise; Balance background sound evens out music and ambience. Both affect the whole soundtrack.','Turn on Enhance audio and choose the mode before generating clips.'],
     ['cleanup','Clean up','Effects','@Clean up','Attempts to tighten speech by removing detected filler words and silences.','Enable before generating. Review the result so the cuts preserve your meaning.'],
     ['broll','AI B-roll','Effects','@AI B-roll','Can insert related stock footage when the stock provider is configured and suitable footage is available.','Enable before generating. If no suitable stock footage is available, the original clip may be used.'],
     ['faces','Face tracking','Effects','@Face tracking','Attempts to follow detected faces while reframing the video. A centered crop is used when tracking is unavailable.','Enable before generating and check that the subject stays in frame.'],
@@ -35,12 +36,15 @@
     ['track','Library track','Reels','#reel-track','Choose an available soundtrack for your reel. If Add music is shown, it opens the music picker.','Preview a track where available and confirm your selection before creating the reel.'],
     ['music-file','Upload music','Reels','#reel-music-file','Adds your own licensed audio to a reel.','Choose Upload my own licensed track under Music source, then select the audio file.'],
     ['music-picker','Music preview and mix','Reels','#sm-open','Where the music picker is available, search and preview tracks, save favorites, choose a start point, and balance music with original audio.','Select Add music in the composer, choose a track, adjust the mix, then select Use Audio.'],
-    ['projects','Projects and downloads','Library','#projects','Finished clips and reels appear here. Preview your result and use Download to save a copy.','Search projects by title. Save anything you need to keep; stored files are subject to the service retention policy.'],
+    ['projects','Projects and downloads','Library','#projects','Clips appear in folders as they finish. Large jobs can keep rendering more clips after the first arrives.','Open a folder to preview and download clips. You can leave the page while a job finishes.'],
+    ['sorting','Newest or oldest first','Library','#sort','Changes the order of folders and clips inside a folder. Your choice is saved on this browser.','Press the sort button above your folders to reverse the order.'],
+    ['rename','Rename a folder','Library','.folder-rename','Give a batch of Shorts or an AI Reel folder a name that stays after refresh.','Press Rename on a folder, enter a name and choose Save.'],
     ['search','Search projects','Library','#q','Filters the visible project list by your search text.','Type part of the project title; clear the field to see all projects.'],
     ['hide','Hide the upload panel','Start','#hero-x','Hides the upload panel to give your projects more space.','Choose Create clips in the side menu to bring it back.'],
     ['redeem','Redeem an access code','Account','#snipo-promo-open','Eligible free-plan accounts can activate a valid complimentary access code. Codes can expire and have limited uses.','Choose Redeem code in the top bar, enter your code and review the activation result.'],
     ['quota','Minutes and plans','Account','.chip','The minutes badge shows the remaining video allowance returned by your account. Clip limits and upload limits also depend on your plan.','Check the badge before a long upload. Pricing lists the available plans.'],
     ['youtube','YouTube publishing','Account','','Publishing a finished video and importing a YouTube source are different features. Publishing requires configured Google credentials and channel authorization.','If publishing controls are available, connect your channel and review the video and visibility before uploading. Otherwise, download the clip and upload it in YouTube Studio.'],
+    ['social','Connect a YouTube channel','Account','#social-accounts','Connect a YouTube channel with separate permission to upload finished clips privately. Google sign-in alone does not grant upload access.','Open Social accounts, choose Connect YouTube and approve the request. The button appears when YouTube publishing is configured.'],
     ['support','Help and support','Account','#help','Use the help assistant for guidance. Where Report a problem is available, include the step and error text so support can investigate.','Do not include passwords, tokens or payment card details in a report.'],
     ['account','Sign out','Account','#out','Ends the current app session on this browser.','Use Sign out in the top bar when you finish on a shared device.']
   ];
@@ -49,7 +53,7 @@
   const nav = document.createElement('aside');
   nav.id='studio-sidebar'; nav.setAttribute('aria-label','Studio sidebar');
   nav.innerHTML=`<div class="studio-side-heading"><a href="/app" class="studio-wordmark">Snipo Clips<span>YOUR CREATIVE STUDIO</span></a><button type="button" id="studio-close" aria-label="Close menu">×</button></div>
-    <nav aria-label="Studio"><p class="studio-group">CREATE</p><button type="button" data-studio="create" aria-current="page"><span aria-hidden="true">＋</span>Create clips</button><button type="button" data-studio="reels"><span aria-hidden="true">▶</span>AI Reel Composer</button><p class="studio-group">WORKSPACE</p><button type="button" data-studio="projects"><span aria-hidden="true">▦</span>All projects</button><button type="button" data-studio="guides"><span aria-hidden="true">?</span>Feature guide</button><a href="/pricing"><span aria-hidden="true">◇</span>Plans & pricing</a><button type="button" data-studio="support"><span aria-hidden="true">☏</span>Help & support</button></nav>
+    <nav aria-label="Studio"><p class="studio-group">CREATE</p><button type="button" data-studio="create" aria-current="page"><span aria-hidden="true">＋</span>Create clips</button><button type="button" data-studio="reels"><span aria-hidden="true">▶</span>AI Reel Composer</button><p class="studio-group">WORKSPACE</p><button type="button" data-studio="projects"><span aria-hidden="true">▦</span>Folders & clips</button><button type="button" data-studio="social"><span aria-hidden="true">◉</span>Social accounts</button><button type="button" data-studio="guides"><span aria-hidden="true">?</span>Feature guide</button><a href="/pricing"><span aria-hidden="true">◇</span>Plans & pricing</a><button type="button" data-studio="support"><span aria-hidden="true">☏</span>Help & support</button></nav>
     <div class="studio-tip"><b>A little guidance, right here.</b><p>Tap a ? beside a setting to see what it does.</p><button type="button" data-studio="guides">Explore all features →</button></div>`;
   document.body.appendChild(nav);
   const shade=document.createElement('button'); shade.id='studio-shade'; shade.type='button'; shade.tabIndex=-1; shade.setAttribute('aria-label','Close menu'); shade.hidden=true; document.body.appendChild(shade);
@@ -116,6 +120,7 @@
     if(action==='create'||action==='projects')b.setAttribute('aria-current','page');
     if(action==='create'){one('.hero').style.display='';one('.hero').scrollIntoView({block:'center'});one('#t-url').focus();}
     if(action==='projects')locate(topics.find(t=>t[0]==='projects'));
+    if(action==='social')locate(topics.find(t=>t[0]==='social'));
     if(action==='reels')one('#reel-open')?.click();
   });
   function addHelp(){
@@ -131,8 +136,16 @@
     });
   }
   addHelp();
+  function describeButtons(){
+    topics.forEach(t=>{
+      const control=resolve(t);
+      if(!control||control.dataset.studioHelp||!control.matches('button,input,select'))return;
+      control.title=t[4];control.setAttribute('aria-description',t[4]);
+    });
+  }
+  describeButtons();
   // Optional music controls can arrive after the composer is installed.
-  new MutationObserver(()=>addHelp()).observe(document.body,{childList:true,subtree:true});
+  new MutationObserver(()=>{addHelp();describeButtons();}).observe(document.body,{childList:true,subtree:true});
   const quick=document.createElement('button');quick.type='button';quick.className='studio-quick-guide';quick.textContent='? How these tools work';quick.addEventListener('click',()=>showGuide('shorts'));one('.tools').after(quick);
   one('#url').setAttribute('aria-label','Source video URL');one('#q').setAttribute('aria-label','Search projects');
 })();
