@@ -71,6 +71,7 @@ router.post('/jobs', requireUser, genLimit, upload.single('video'),
     const captionStyle = ['classic','white','green','pink'].includes(req.body.captionStyle) ? req.body.captionStyle : 'classic';
     const clipStyle = ['clean','karaoke','sigma','meme'].includes(req.body.clipStyle) ? req.body.clipStyle : 'clean';
     const enhance = req.body.enhance === '1' || req.body.enhance === 'true' || req.body.enhance === true;
+    const audioMode = req.body.audioMode === 'background' ? 'background' : 'speech';
     const broll = req.body.broll === '1' || req.body.broll === 'true' || req.body.broll === true;
     const ratio = ['9:16','1:1','16:9','4:5'].includes(req.body.ratio) ? req.body.ratio : '9:16';
     const hook = req.body.hook === '1' || req.body.hook === 'true' || req.body.hook === true;
@@ -135,7 +136,7 @@ router.post('/jobs', requireUser, genLimit, upload.single('video'),
     if (error) return res.status(500).json({ error: 'Could not create job' });
 
     // Process asynchronously (in-process worker; swap for a queue at scale).
-    setImmediate(() => processJob(job, { filePath, videoUrl, prompt, duration, count: effCount, captionStyle, clipStyle, enhance, broll, ratio, hook, fillers, highlight, progress, faceTrack, emoji, karaoke, language }));
+    setImmediate(() => processJob(job, { filePath, videoUrl, prompt, duration, count: effCount, captionStyle, clipStyle, enhance, audioMode, broll, ratio, hook, fillers, highlight, progress, faceTrack, emoji, karaoke, language }));
     res.json({ jobId: job.id });
   }
 );
