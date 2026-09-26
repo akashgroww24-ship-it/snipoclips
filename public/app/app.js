@@ -208,7 +208,7 @@ function applyMe(m){
 }
 
 let clips=[];
-let folderCategory=location.hash==='#reels'?'reels':'all', openFolder=null;
+let folderCategory=location.hash==='#reels'?'reels':'all', openFolder=null, renamingFolder=null;
 async function load(){ try{
   if(PREVIEW){ clips=FIX.clips; draw(); return; }
   clips=(await api('/api/clips')).clips||[]; draw();
@@ -234,35 +234,63 @@ function draw(){ const q=$('#q').value.trim().toLowerCase();
   const visible=all.filter(f=>folderCategory==='all'||f.type===folderCategory);
   const current=visible.find(f=>f.key===openFolder);
   if(openFolder&&!current) openFolder=null;
-  $('#projects-title').textContent=current?(current.type==='reels'?'AI Reel':'Shorts folder'):'Your folders';
+  $('#projects-title').textContent=current?folderTitle(current):'Your folders';
   $('#projects-count').textContent=current?`${current.items.length} ${current.items.length===1?'video':'videos'}`:`${visible.length} ${visible.length===1?'folder':'folders'}`;
   $('#folder-nav').innerHTML=`<button type="button" class="folder-tab ${folderCategory==='all'?'active':''}" data-category="all">All folders</button>
     <button type="button" class="folder-tab ${folderCategory==='shorts'?'active':''}" data-category="shorts">Shorts</button>
     <button type="button" class="folder-tab ${folderCategory==='reels'?'active':''}" data-category="reels">AI Reels</button>`+
-    (current?'<button type="button" class="folder-back" id="folder-back">← Back to folders</button>':'');
-  $$('#folder-nav [data-category]').forEach(b=>b.onclick=()=>{folderCategory=b.dataset.category;openFolder=null;draw();});
-  if(current) $('#folder-back').onclick=()=>{openFolder=null;draw();};
+    (current?'<button type="button" class="folder-back" id="folder-back">← Back to folders</button><button type="button" class="folder-back" id="folder-rename-current">Rename folder</button>':'');
+  $$('#folder-nav [data-category]').forEach(b=>b.onclick=()=>{folderCategory=b.dataset.category;openFolder=null;renamingFolder=null;draw();});
+  if(current){
+    $('#folder-back').onclick=()=>{openFolder=null;draw();};
+    $('#folder-rename-current').onclick=()=>{openFolder=null;startFolderRename(current.key);};
+  }
   const list=current ? current.items.filter(c=>!q||(c.title||'').toLowerCase().includes(q)) :
-    visible.filter(f=>!q||f.items.some(c=>(c.title||'').toLowerCase().includes(q)) ||
+    visible.filter(f=>!q||folderTitle(f).toLowerCase().includes(q)||f.items.some(c=>(c.title||'').toLowerCase().includes(q)) ||
       (f.type==='reels'?'AI Reel':'Shorts').toLowerCase().includes(q));
   if(!list.length){ $('#grid').innerHTML=`<div class="empty">
     <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="m10 9 5 3-5 3z"/></svg>
     <p>${q?'Nothing matches that search':current?'No clips in this folder':'No folders yet'}</p>
     <small>${q?'Try another word.':'Create Shorts above or make an AI Reel to see it here.'}</small></div>`; return; }
   $('#grid').innerHTML=current?list.map(card).join(''):list.map(folderCard).join('');
-  $$('.folder-card').forEach(el=>el.onclick=()=>{openFolder=el.dataset.folder;$('#q').value='';draw();});
+  $$('.folder-open').forEach(el=>el.onclick=()=>{openFolder=el.dataset.folder;$('#q').value='';renamingFolder=null;draw();});
+  $$('.folder-rename').forEach(el=>el.onclick=()=>startFolderRename(el.dataset.folder));
+  $$('.folder-cancel').forEach(el=>el.onclick=()=>{renamingFolder=null;draw();});
+  $$('.folder-edit').forEach(el=>{
+    el.onsubmit=e=>{e.preventDefault();saveFolderRename(el);};
+    el.onkeydown=e=>{if(e.key==='Escape'){renamingFolder=null;draw();}};
+  });
   $$('.card').forEach(k=>{const v=k.querySelector('video');
     if(v){k.onmouseenter=()=>v.play().catch(()=>{}); k.onmouseleave=()=>{v.pause();v.currentTime=0};} }); }
-function folderCard(f){
+function folderTitle(f){
   const first=f.items[0], reel=f.type==='reels';
-  const name=reel?(first.title||'AI Reel'):`Shorts · ${f.date?new Date(f.date).toLocaleDateString():'Project'}`;
+  return first.folder_name||(reel?(first.title||'AI Reel'):`Shorts · ${f.date?new Date(f.date).toLocaleDateString():'Project'}`);
+}
+function folderCard(f){
+  const reel=f.type==='reels', name=folderTitle(f), first=f.items[0];
   const subtitle=reel?'Finished AI Reel':`${f.items.length} ${f.items.length===1?'Short':'Shorts'} · ${first.title||'Generated clips'}`;
-  return `<button type="button" class="folder-card" data-folder="${escapeHtml(f.key)}" aria-label="Open ${escapeHtml(name)} folder">
+  if(renamingFolder===f.key) return `<article class="folder-card"><form class="folder-edit" data-folder="${escapeHtml(f.key)}">
+    <label>Folder name<input name="name" type="text" value="${escapeHtml(name)}" maxlength="80" required aria-label="Folder name"></label>
+    <div class="folder-actions"><button type="submit">Save</button><button class="folder-cancel" type="button">Cancel</button></div></form></article>`;
+  return `<article class="folder-card"><button type="button" class="folder-open" data-folder="${escapeHtml(f.key)}" aria-label="Open ${escapeHtml(name)} folder">
     <span class="folder-icon" aria-hidden="true">${reel?'▶':'▣'}</span>
     <span class="folder-detail"><strong>${escapeHtml(name)}</strong><small>${escapeHtml(subtitle)}</small></span>
-    <span class="folder-arrow" aria-hidden="true">→</span></button>`;
+    <span class="folder-arrow" aria-hidden="true">→</span></button>
+    <button type="button" class="folder-rename" data-folder="${escapeHtml(f.key)}" aria-label="Rename ${escapeHtml(name)} folder">Rename</button></article>`;
 }
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function startFolderRename(key){renamingFolder=key;$('#q').value='';draw();const input=$('.folder-edit input');if(input){input.focus();input.select();}}
+async function saveFolderRename(form){
+  const name=form.elements.name.value.trim();
+  if(!name||name.length>80||/[\x00-\x1f\x7f]/.test(name)) return toast('Invalid folder name','Use 1–80 characters on one line.','err');
+  const jobId=form.dataset.folder.split(':').slice(1).join(':');
+  const save=form.querySelector('[type="submit"]');save.disabled=true;
+  try{
+    if(!PREVIEW) await api('/api/folders/'+encodeURIComponent(jobId),{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({name})});
+    clips.forEach(c=>{if(String(c.job_id||c.id)===jobId)c.folder_name=name;});
+    renamingFolder=null;draw();toast('Folder renamed','Your new name was saved.');
+  }catch(e){save.disabled=false;toast('Could not rename folder','Please try again.','err');}
+}
 function card(c){
   const secs=(c.end_sec!=null&&c.start_sec!=null)?Math.round(c.end_sec-c.start_sec):null;
   const dur=secs!=null?`${Math.floor(secs/60)}:${String(secs%60).padStart(2,'0')}`:'';
