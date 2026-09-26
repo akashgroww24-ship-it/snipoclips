@@ -69,3 +69,24 @@ test('email signup keeps the confirmation message and sends its link to the stud
   assert.match(message,/Check your email/);
   assert.equal(location.href,'/login');
 });
+
+test('existing email signup prompts sign in for an obfuscated user or an explicit duplicate error', async () => {
+  const start = html.indexOf("$('submit').onclick=async()=>{");
+  const end = html.indexOf("\n$('forgot').onclick=", start);
+  for (const response of [
+    { data:{user:{identities:[]},session:null},error:null },
+    { data:null,error:{code:'user_already_exists',message:'User already registered'} }
+  ]) {
+    const submit = { onclick:null };
+    let prompts=0, message='';
+    const ctx = { mode:'up', location:{origin:'https://snipoclip.com',href:'/login'}, console,
+      _locked:()=>false, $:id=>({submit,email:{value:'taken@example.com'},pass:{value:'a-password'}}[id]),
+      msg:text=>{message=text;}, showExistingAccount:()=>{prompts++;},
+      supa:{auth:{signUp:async()=>response}} };
+    vm.runInNewContext(html.slice(start,end),ctx);
+    await submit.onclick();
+    assert.equal(prompts,1);
+    assert.equal(ctx.location.href,'/login');
+    assert.equal(message,'');
+  }
+});
