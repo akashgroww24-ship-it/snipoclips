@@ -98,7 +98,8 @@
       const d=await api('/api/jobs/'+id); const j=d.job||{}; updateProgress(j.stage||'planning');
       if(j.status==='done'){
         clearInterval(state.poll); updateProgress('done'); state.running=false; $('#reel-go').disabled=false; $('#reel-go').textContent='✦ Create another reel';
-        toast('AI reel ready','Your finished reel is now in All projects.'); await load();
+        folderCategory='reels'; openFolder='reels:'+id;
+        toast('AI reel ready','Your finished reel is in its AI Reels folder.'); await load();
         setTimeout(()=>{modal.classList.remove('on');document.body.style.overflow='';const p=$('#projects');if(p)p.scrollIntoView({behavior:'smooth'});},1100);
       } else if(j.status==='error'){
         clearInterval(state.poll); state.running=false; $('#reel-go').disabled=false; $('#reel-go').textContent='Try again'; toast("We couldn't create the reel",j.error||'Render failed.','err');
