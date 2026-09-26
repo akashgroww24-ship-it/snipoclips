@@ -163,9 +163,30 @@ router.get('/clips', requireUser, async (req, res) => {
   if (error) {  // caption/hashtags migration not run yet — fall back so the list still works
     const r = await admin.from('clips').select(COLS_OLD).eq('user_id', req.user.id).order('created_at', { ascending: false }).limit(200);
     clips = r.data;
+    error = r.error;
   }
-  const withUrls = await Promise.all((clips || []).map(async c => ({ ...c, url: await sign(c.storage_path) })));
+  if (error) return res.status(500).json({ error: 'Could not load clips' });
+  const jobIds = [...new Set((clips || []).map(c => c.job_id).filter(Boolean))];
+  let names = new Map();
+  if (jobIds.length) {
+    const result = await admin.from('jobs').select('id,folder_name').eq('user_id', req.user.id).in('id', jobIds);
+    if (result.error) return res.status(500).json({ error: 'Could not load folder names' });
+    names = new Map((result.data || []).map(j => [j.id, j.folder_name]));
+  }
+  const withUrls = await Promise.all((clips || []).map(async c => ({ ...c, folder_name: names.get(c.job_id) || null, url: await sign(c.storage_path) })));
   res.json({ clips: withUrls });
+});
+
+// A folder represents one generation job. Only its owner can rename it.
+router.patch('/folders/:jobId', requireUser, async (req, res) => {
+  const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+  if (!name || name.length > 80 || /[\x00-\x1f\x7f]/.test(name))
+    return res.status(400).json({ error: 'Use a folder name of 1–80 characters on one line.' });
+  const { data, error } = await admin.from('jobs').update({ folder_name: name })
+    .eq('id', req.params.jobId).eq('user_id', req.user.id).select('id,folder_name').maybeSingle();
+  if (error) return res.status(500).json({ error: 'Could not rename folder' });
+  if (!data) return res.status(404).json({ error: 'Folder not found' });
+  res.json({ jobId: data.id, name: data.folder_name });
 });
 
 // Caption text for the editor (fetched on demand so the clips list stays light).
