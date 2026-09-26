@@ -5,6 +5,8 @@
   const topics = [
     ['upload','Upload a video','Start','#t-file','Choose an MP4, MOV or WebM up to 1 GB. Your plan also limits video length and monthly minutes.','Choose Upload file, select your video, then press Get clips in 1 click.'],
     ['link','Import a link','Start','#t-url','Use a video URL you have permission to edit. Some sites reject imports; connecting YouTube does not unlock source downloads.','Paste the link. If the import fails, upload your original video file instead.'],
+    ['generate','Get clips in 1 click','Start','#go','Starts analyzing your video and creates short clips. Each finished clip appears while the rest are still processing.','Add a video link or upload a file, choose your options, then press Get clips in 1 click.'],
+    ['options','Clip options','Start','#opt-btn','Adjust the clip format, length, captions, language, audio and effects before processing.','Open Options, choose the settings you want, then start the clip job.'],
     ['shorts','Long to shorts','Presets','#track .tool:nth-child(1)','Find highlight ranges in a longer video and turn them into short clips. This preset enables karaoke captions and a hook title.','Select the preset, review Options, then submit a video.'],
     ['captions','AI Captions','Presets','#track .tool:nth-child(2)','Select a caption-focused clipping preset with timed word highlighting. It still creates clips from your source video.','Choose the preset and set caption color and language in Options. Check generated text before publishing.'],
     ['moments','Find moments','Presets','#track .tool:nth-child(3)','Highlight selection finds promising sections. This preset enables karaoke and a hook, like Long to shorts; it is not a separate search engine.','Select the preset and submit your video. Review the suggested clips in All projects.'],
@@ -147,5 +149,41 @@
   // Optional music controls can arrive after the composer is installed.
   new MutationObserver(()=>{addHelp();describeButtons();}).observe(document.body,{childList:true,subtree:true});
   const quick=document.createElement('button');quick.type='button';quick.className='studio-quick-guide';quick.textContent='? How these tools work';quick.addEventListener('click',()=>showGuide('shorts'));one('.tools').after(quick);
+  // Show the explanation when a feature is chosen. This does not prevent its normal action.
+  const summary=document.createElement('section');summary.id='studio-summary';summary.hidden=true;
+  summary.setAttribute('aria-labelledby','studio-summary-title');summary.setAttribute('aria-live','polite');
+  summary.innerHTML='<button type="button" id="studio-summary-close" aria-label="Dismiss feature summary">×</button><p class="studio-summary-eyebrow">FEATURE SUMMARY</p><h3 id="studio-summary-title"></h3><p id="studio-summary-what"></p><p id="studio-summary-how"></p><button type="button" id="studio-summary-more">Read full guide →</button>';
+  document.body.appendChild(summary);
+  let activeSummary='';
+  summary.querySelector('#studio-summary-close').addEventListener('click',()=>{summary.hidden=true;activeSummary='';});
+  summary.querySelector('#studio-summary-more').addEventListener('click',()=>{summary.hidden=true;showGuide(activeSummary);});
+  const extraControls={
+    '#url':'link','#drop':'upload','#file':'upload','#q':'search',
+    '#reel-select-all':'director','#reel-go':'reels',
+    '#folder-rename-current':'rename','#youtube-connect':'social','#youtube-disconnect':'social',
+    '#track .tool:nth-child(5)':'broll','#track .tool:nth-child(6)':'enhance'
+  };
+  function topicFor(control){
+    const mapped=Object.entries(extraControls).find(([selector])=>control.matches(selector));
+    if(mapped)return topics.find(t=>t[0]===mapped[1]);
+    if(control.matches('#reel-modal .reel-mode button'))return topics.find(t=>t[0]==='director');
+    if(control.matches('.folder-rename'))return topics.find(t=>t[0]==='rename');
+    return topics.find(t=>resolve(t)===control);
+  }
+  function describeChoice(event){
+    const control=event.target.closest?.('button,select,input,#drop');
+    if(!control||control.closest('#studio-guide,#studio-sidebar,#studio-summary')||control.matches('.studio-info'))return;
+    // A select can emit both click and change; refresh the card after a selection changes.
+    if(event.type==='change'&&!control.matches('select'))return;
+    const topic=topicFor(control);if(!topic)return;
+    activeSummary=topic[0];
+    summary.querySelector('#studio-summary-title').textContent=topic[1];
+    summary.querySelector('#studio-summary-what').textContent=topic[4];
+    const selected=control.matches('select')?control.selectedOptions[0]?.textContent:'';
+    summary.querySelector('#studio-summary-how').textContent=(selected?'Selected: '+selected+'. ':'')+'How to use: '+topic[5];
+    summary.hidden=false;
+  }
+  document.addEventListener('click',describeChoice);
+  document.addEventListener('change',describeChoice);
   one('#url').setAttribute('aria-label','Source video URL');one('#q').setAttribute('aria-label','Search projects');
 })();
