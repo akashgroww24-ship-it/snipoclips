@@ -366,8 +366,21 @@ $('#sort').onclick=()=>{sortOrder=sortOrder==='newest'?'oldest':'newest';localSt
 /* processing — real stages only */
 const S=[['queued','Video imported'],['download','Media downloaded'],['transcribe','Transcript generated'],
   ['highlights','Finding viral moments'],['rendering','Generating clips'],['done','Clips ready']];
-function steps(stage){ const i=Math.max(0,S.findIndex(x=>x[0]===stage));
-  $('#proc-b').style.width=Math.round(i/(S.length-1)*100)+'%';
+function steps(stage, completedClips=0, selectedClips=null, finished=false){
+  const i=Math.max(0,S.findIndex(x=>x[0]===stage));
+  const total=Number(selectedClips), known=selectedClips!==null&&selectedClips!==undefined&&Number.isInteger(total)&&total>=0;
+  const made=Math.max(0,Number(completedClips)||0);
+  // Four preparation steps (import, download, transcript, selection), followed
+  // by one step per saved clip. Each completed unit has the same weight.
+  const prep=[1,1,2,3,4,4][i];
+  const units=known?4+total:0;
+  const complete=finished?units:Math.min(units,prep+(i>=4?made:0));
+  const percent=units?Math.min(100,Math.floor(complete/units*100)):null;
+  $('#proc-b').style.width=(percent??0)+'%';
+  $('#proc-meter').setAttribute('aria-valuenow',String(percent??0));
+  $('#proc-completed').textContent=percent===null?'Calculating…':percent+'% completed';
+  $('#proc-pending').textContent=percent===null?'':' '+(100-percent)+'% pending';
+  $('#proc-detail').textContent=known?(Math.min(made,total)+' of '+total+' clips ready · '+complete+' of '+units+' tasks complete'):'Choosing how many clips to create…';
   $('#proc-n').textContent=S[i]?S[i][1]+'…':'Working…';
   $('#proc-s').innerHTML=S.map(([,l],n)=>`<div class="step ${n<i?'done':n===i?'cur':''}"><span class="d">${n<i?'✓':''}</span>${l}</div>`).join(''); }
 
@@ -411,11 +424,11 @@ function watch(id){ clearTimeout(poll); activeJobId=id; let n=0, lastCount=0, fa
     if(!r.ok)throw new Error('Job status unavailable');
     const d=await r.json(); const j=d.job||{};
     failures=0;
-    steps(j.stage||'queued');
     const count=(d.clips||[]).length;
+    steps(j.stage||'queued',Math.max(count,Number(j.clips_count)||0),j.clips_total,j.status==='done');
     if(count>lastCount){lastCount=count;load();$('#proc-t').textContent=count+' '+(count===1?'clip':'clips')+' ready · more rendering';}
     if(j.status==='done'){
-      activeJobId=null;sessionStorage.removeItem('sc_active_job');steps('done');
+      activeJobId=null;sessionStorage.removeItem('sc_active_job');steps('done',count,j.clips_total??count,true);
       $('#proc-t').textContent=count+' '+(count===1?'clip':'clips')+' ready';
       toast('All clips ready','Scroll down to watch and download them.');reset();load();me();return;
     }

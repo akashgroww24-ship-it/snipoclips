@@ -131,7 +131,7 @@ router.post('/jobs', requireUser, genLimit, upload.single('video'),
     const effCount = Math.min(count, remaining);
 
     const { data: job, error } = await admin.from('jobs')
-      .insert({ user_id: req.user.id, source_url: videoUrl, status: 'queued', stage: 'queued' })
+      .insert({ user_id: req.user.id, source_url: videoUrl, status: 'queued', stage: 'queued', clips_total: effCount })
       .select().single();
     if (error) return res.status(500).json({ error: 'Could not create job' });
 
