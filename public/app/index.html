@@ -156,11 +156,13 @@
   </section>
   <section class="sec social-panel" id="social-accounts" aria-labelledby="social-heading">
     <div class="sec-h"><h2 id="social-heading">Social accounts</h2></div>
-    <p>Connect your YouTube channel to upload finished clips privately. This uses a separate YouTube permission from Google sign-in.</p>
+    <p>Connect your YouTube channel to upload a clip you choose. This uses a separate YouTube permission from Google sign-in. New or unaudited API projects may have uploads restricted to private by YouTube.</p>
+    <p id="youtube-consent" hidden><label><input type="checkbox" id="youtube-consent-check"> I have read the <a href="/#/privacy" target="_blank" rel="noopener">Snipo Clips Privacy Policy</a> and agree to the <a href="https://www.youtube.com/t/terms" target="_blank" rel="noopener">YouTube Terms of Service</a>.</label></p>
     <div class="social-row"><span id="youtube-state" role="status">Checking YouTube connection…</span>
       <button type="button" class="btn prim" id="youtube-connect" hidden>Connect YouTube</button>
       <button type="button" class="btn ghost" id="youtube-disconnect" hidden>Disconnect</button>
     </div>
+    <label id="youtube-privacy-label" hidden for="youtube-privacy">Upload visibility: <select id="youtube-privacy"><option value="private">Private</option><option value="unlisted">Unlisted</option><option value="public">Public</option></select></label>
   </section>
 </main>
 

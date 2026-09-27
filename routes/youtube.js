@@ -21,6 +21,7 @@ router.get('/youtube/status', requireUser, async (req, res) => {
 // ---- step 1: hand the browser a Google consent URL (state ties it to the user) ----
 router.post('/youtube/connect', requireUser, async (req, res) => {
   if (!yt.configured()) return res.status(501).json({ error: 'YouTube upload is not configured on this server yet.' });
+  if (req.body?.acceptedYouTubeTerms !== true) return res.status(400).json({ error: 'Review the privacy policy and YouTube terms before connecting.' });
   const state = jwt.sign({ uid: req.user.id, n: Math.random().toString(36).slice(2) }, process.env.JWT_SECRET, { expiresIn: '10m' });
   res.json({ url: yt.authUrl(state, yt.redirectUri(req)) });
 });
