@@ -37,10 +37,11 @@
   .link{background:none;border:0;color:var(--muted);font:inherit;font-size:13px;cursor:pointer;margin-top:14px;text-decoration:underline;display:block;text-align:center;width:100%}
   .msg{font-size:13px;min-height:18px;margin-top:12px;text-align:center}
   .auth-hint{color:var(--muted);font-size:12px;line-height:1.5;text-align:center;margin:10px 0 0}
-  .reset-form[hidden]{display:none}
-  .reset-form h2{margin:0 0 10px}
-  .reset-form p{color:var(--muted);font-size:13px;line-height:1.5}
-  .reset-mode .tabs,.reset-mode .google,.reset-mode .divider,.reset-mode #form{display:none}
+  .reset-form[hidden],.forgot-form[hidden]{display:none}
+  .reset-form h2,.forgot-form h2{margin:0 0 10px}
+  .reset-form p,.forgot-form p{color:var(--muted);font-size:13px;line-height:1.5}
+  .reset-mode .tabs,.reset-mode .google,.reset-mode #googleHint,.reset-mode .divider,.reset-mode #form,
+  .forgot-mode .tabs,.forgot-mode .google,.forgot-mode #googleHint,.forgot-mode .divider,.forgot-mode #form{display:none}
   .err{color:var(--magenta)}.ok{color:var(--green)}
   #existingAccount{width:min(360px,calc(100vw - 32px));border:1px solid var(--violet-c);border-radius:18px;padding:25px;background:var(--panel);color:var(--text);box-shadow:0 20px 70px #0009}
   #existingAccount::backdrop{background:#05030bc9}#existingAccount p{font-size:14px;color:var(--muted);line-height:1.6}
@@ -73,12 +74,20 @@
     <button class="link" id="forgot" data-t="forgot">Forgot password?</button>
     <div class="msg" id="msg"></div>
   </div>
+  <form class="forgot-form" id="forgotForm" hidden>
+    <h2>Reset your password</h2>
+    <p>Enter your email and we'll send a link to set a new password.</p>
+    <label for="forgotEmail">Email</label><input id="forgotEmail" type="email" autocomplete="email" placeholder="you@example.com" required>
+    <button type="submit" class="go" id="forgotSend">Send reset link</button>
+    <div class="msg" id="forgotMsg" role="status" aria-live="polite"></div>
+    <button type="button" class="link" id="forgotBack">Back to sign in</button>
+  </form>
   <div class="reset-form" id="resetForm" hidden>
     <h2>Set a new password</h2><p>Enter a new password for your account. Use at least 8 characters.</p>
     <label for="newPassword">New password</label><input id="newPassword" type="password" autocomplete="new-password" minlength="8" required>
     <label for="confirmPassword">Confirm new password</label><input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" required>
     <button type="button" class="go" id="resetSave">Update password</button>
-    <div class="msg" id="resetMsg" role="status"></div>
+    <div class="msg" id="resetMsg" role="status" aria-live="polite"></div>
   </div>
 </div>
 <dialog id="existingAccount" aria-labelledby="existingTitle" aria-describedby="existingDescription">
@@ -101,8 +110,15 @@ function nextUrl(){
 }
 const msg=(t,ok)=>{ const m=$('msg'); m.textContent=t; m.className='msg '+(ok?'ok':'err'); };
 function showRecovery(){
-  recoveryMode=true;document.querySelector('.box').classList.add('reset-mode');
+  recoveryMode=true;document.querySelector('.box').classList.remove('forgot-mode');document.querySelector('.box').classList.add('reset-mode');
+  $('forgotForm').hidden=true;
   $('resetForm').hidden=false;$('newPassword').focus();
+}
+function showForgot(){
+  if(recoveryMode)return;
+  document.querySelector('.box').classList.add('forgot-mode');
+  $('forgotForm').hidden=false;$('forgotEmail').value=$('email').value.trim();
+  $('forgotMsg').textContent='';$('forgotEmail').focus();
 }
 
 /* ---- lightweight i18n for the auth screen (login strings live here, not in app/i18n.js) ---- */
@@ -158,11 +174,12 @@ async function init(){
   supa=window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
   // Subscribe before getSession: the recovery redirect may emit its event
   // while Supabase reads the tokens from the URL.
+  const recoveryLink=new URLSearchParams(location.hash.slice(1)).get('type')==='recovery';
   supa.auth.onAuthStateChange((event, session)=>{
     if(event==='PASSWORD_RECOVERY'&&session)showRecovery();
   });
   const { data:{ session } } = await supa.auth.getSession();
-  if(recoveryMode)return;
+  if(recoveryMode||recoveryLink){if(recoveryLink&&session)showRecovery();return;}
   const authError=new URLSearchParams(location.hash.slice(1)).get('error_description');
   if(authError){msg('This sign-in or reset link expired. Request a new link and try again.');return;}
   if(session){
@@ -258,12 +275,26 @@ $('submit').onclick=async()=>{
   }
 };
 
-$('forgot').onclick=async()=>{
-  if(!supa) return;
-  const email=$('email').value.trim();
-  if(!email){ msg('Enter your email first'); return; }
-  const { error }=await supa.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/login' });
-  msg(error? error.message : 'Password reset link sent — check your email.', !error);
+$('forgot').onclick=showForgot;
+$('forgotBack').onclick=()=>{
+  document.querySelector('.box').classList.remove('forgot-mode');
+  $('forgotForm').hidden=true;$('email').value=$('forgotEmail').value.trim();
+  $('email').focus();
+};
+$('forgotForm').onsubmit=async event=>{
+  event.preventDefault();
+  const notice=$('forgotMsg'), email=$('forgotEmail').value.trim();
+  if(!email||!$('forgotEmail').checkValidity()){
+    $('forgotEmail').reportValidity();return;
+  }
+  if(!supa){notice.className='msg err';notice.textContent='Authentication is still loading. Try again in a moment.';return;}
+  const send=$('forgotSend');send.disabled=true;notice.className='msg';notice.textContent='Sending your reset link…';
+  try{
+    const { error }=await supa.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/login' });
+    if(error)throw error;
+    notice.className='msg ok';notice.textContent='If this email has a password account, a reset link is on its way. Check your inbox and spam folder.';
+  }catch(e){notice.className='msg err';notice.textContent=e.message||'Could not send the link. Please try again.';}
+  finally{send.disabled=false;}
 };
 $('resetSave').onclick=async()=>{
   if(!supa||!recoveryMode)return;
