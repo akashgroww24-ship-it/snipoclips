@@ -28,9 +28,15 @@
  .login input{width:100%;background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:10px;padding:12px;color:#fff;margin-bottom:10px;font:inherit}
  .login .go{width:100%;background:linear-gradient(135deg,#43B0FF,#7B5CFF,#FF3DBE);color:#fff;border:0;border-radius:10px;padding:12px;font-weight:600;cursor:pointer}
  .err{color:#FF3DBE;font-size:13px;min-height:18px;margin-top:6px}
+ .section-title{margin:27px 0 12px;font:700 19px 'Space Grotesk',Inter,sans-serif}
+ .insight-cards{grid-template-columns:repeat(4,1fr)}.insight-cards .card .val{font-size:25px}
+ .insight-cards .card small{display:block;color:var(--muted2);font-size:11px;margin-top:7px;line-height:1.4}
+ .status-ok{color:#65dcb4}.status-error{color:#ff84b9}
+ .analytics-table{width:100%;border-collapse:collapse;font-size:12px}.analytics-table th{text-align:left;color:var(--muted);font-weight:500}.analytics-table td,.analytics-table th{padding:9px 7px;border-bottom:1px solid var(--line)}
+ .analytics-scroll{overflow:auto;max-height:320px}.detail-note{font-size:11px;color:var(--muted);line-height:1.55;margin:10px 0}
  .hide{display:none!important}
  canvas{max-height:240px}
- @media(max-width:760px){.cards{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
+ @media(max-width:760px){.cards{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.insight-cards{grid-template-columns:repeat(2,1fr)}}
 </style></head><body>
 
 <div class="login" id="login">
@@ -51,6 +57,17 @@
    <button class="b" id="logout">Logout</button>
  </div>
  <div class="cards" id="cards"></div>
+ <h2 class="section-title">Live operations · last 30 days</h2>
+ <p class="detail-note">Visitor counts use anonymous first-party browser cookies, so they are approximate. Active minutes count visible signed-in sessions. All dates below are UTC.</p>
+ <div class="cards insight-cards" id="insightCards"><div class="card">Loading live analytics…</div></div>
+ <div class="grid2">
+   <div class="panel"><h3>Visits, clips and edits</h3><div class="sub">Daily activity, UTC</div><canvas id="cInsights"></canvas></div>
+   <div class="panel"><h3>Most visited pages</h3><div class="sub">Views and unique browsers over 30 days</div><div id="popularPages"></div></div>
+ </div>
+ <div class="grid2">
+   <div class="panel"><h3>Daily detail</h3><div class="sub">Browsers, page views, clips, edits and active minutes</div><div class="analytics-scroll" id="dailyAnalytics"></div></div>
+   <div class="panel"><h3>Automatic 30-day deletion</h3><div class="sub">Runs at startup and every 24 hours</div><p id="retentionStatus" class="detail-note">Checking cleanup status…</p><p class="detail-note">Deletes expired clips, editable masters, private music, jobs without clips and visit/activity records. Accounts, billing, support reports and licensed catalog tracks remain.</p></div>
+ </div>
  <div class="grid2">
    <div class="panel"><h3>Growth — last 14 days</h3><div class="sub">New signups &amp; clips generated</div><canvas id="cGrowth"></canvas></div>
    <div class="panel"><h3>Plan mix</h3><div class="sub">Free / Single / Half / Full</div><canvas id="cPlans"></canvas></div>
@@ -80,7 +97,7 @@ async function load(){
   const d=await r.json();
   $('login').classList.add('hide');$('app').classList.remove('hide');
   if(!d.configured){$('cards').innerHTML='<div class="card"><div class="lab">Supabase</div><div class="val">Not set</div></div>';return;}
-  const cards=[['Total users',d.totals.users],['Clips generated',d.totals.clips],['Jobs run',d.totals.jobs],['Open bug reports',d.totals.openReports]];
+  const cards=[['Total accounts',d.totals.users],['Clips stored',d.totals.clips],['Jobs retained',d.totals.jobs],['Open bug reports',d.totals.openReports]];
   $('cards').innerHTML=cards.map(c=>`<div class="card"><div class="lab">${c[0]}</div><div class="val">${Number(c[1]).toLocaleString()}</div></div>`).join('');
   Object.values(charts).forEach(c=>c.destroy());charts={};
   const labels=d.days.map(x=>x.slice(5));
@@ -92,6 +109,40 @@ async function load(){
   const reps=d.reports||[];
   $('repSub').textContent=reps.length?(reps.length+' most recent'):'No bug reports yet 🎉';
   $('reports').innerHTML=reps.length?reps.map(x=>`<div class="rep"><div class="who">${esc(x.email||'user')} · ${new Date(x.created_at).toLocaleString()}${x.url?' · '+esc(x.url):''}</div><div class="msg">${esc(x.message)}</div></div>`).join(''):'<div class="rep" style="color:#6a6f86">Nothing reported yet.</div>';
+  await loadInsights();
+}
+async function loadInsights(){
+  try{
+    const r=await fetch('/admin/api/insights',{credentials:'same-origin'});
+    if(!r.ok)throw new Error('Analytics unavailable ('+r.status+')');
+    const data=await r.json(),t=data.totals||{},days=data.days||[];
+    const tiles=[
+      ['Unique visitors',t.uniqueVisitors30,'Browser-based, last 30 days'],
+      ['Page views',t.pageViews30,'First-party visits'],
+      ['Visitors today',t.visitorsToday,'UTC day'],
+      ['Active users',t.activeUsers30,'Signed-in, last 30 days'],
+      ['Session minutes',t.activeMinutes30,'Visible app time, last 30 days'],
+      ['Source video minutes',t.sourceMinutes30,'Processed since tracking began'],
+      ['Clips made',t.clipsCreated30,'Last 30 days'],
+      ['Clips edited',t.clipsEdited30,'Distinct clips, last 30 days'],
+      ['Edit saves',t.editActions30,'Successful re-renders'],
+      ['Jobs started / failed',`${Number(t.jobsStarted30||0)} / ${Number(t.jobsFailed30||0)}`,'Last 30 days'],
+      ['New accounts',t.accountsNew30,'Last 30 days'],
+      ['Accounts total',t.accountsTotal,'Accounts are retained']
+    ];
+    $('insightCards').innerHTML=tiles.map(([label,value,note])=>`<div class="card"><div class="lab">${label}</div><div class="val">${typeof value==='number'?value.toLocaleString():esc(value)}</div><small>${note}</small></div>`).join('');
+    if(charts.insights)charts.insights.destroy();
+    charts.insights=new Chart($('cInsights'),{type:'line',data:{labels:days.map(x=>String(x.day).slice(5)),datasets:[
+      {label:'Visitors',data:days.map(x=>Number(x.visitors||0)),borderColor:'#43B0FF',tension:.25},
+      {label:'Clips',data:days.map(x=>Number(x.clips||0)),borderColor:'#FF3DBE',tension:.25},
+      {label:'Edits',data:days.map(x=>Number(x.edits||0)),borderColor:'#65dcb4',tension:.25}
+    ]},options:{maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9aa0b8'}}},scales:{x:{ticks:{color:'#9aa0b8',maxTicksLimit:8}},y:{beginAtZero:true,ticks:{color:'#9aa0b8',precision:0}}}}});
+    const pages=data.pages||[];
+    $('popularPages').innerHTML=pages.length?'<div class="analytics-scroll"><table class="analytics-table"><thead><tr><th>Page</th><th>Views</th><th>Visitors</th></tr></thead><tbody>'+pages.map(p=>`<tr><td>${esc(p.path)}</td><td>${Number(p.views||0)}</td><td>${Number(p.visitors||0)}</td></tr>`).join('')+'</tbody></table></div>':'<p class="detail-note">Visit tracking starts with this release.</p>';
+    $('dailyAnalytics').innerHTML='<table class="analytics-table"><thead><tr><th>Day</th><th>Visitors</th><th>Views</th><th>Clips</th><th>Edits</th><th>Minutes</th></tr></thead><tbody>'+days.slice().reverse().map(x=>`<tr><td>${esc(x.day)}</td><td>${Number(x.visitors||0)}</td><td>${Number(x.views||0)}</td><td>${Number(x.clips||0)}</td><td>${Number(x.edits||0)}</td><td>${Number(x.activeMinutes||0)}</td></tr>`).join('')+'</tbody></table>';
+    const cleanup=data.retention;
+    $('retentionStatus').innerHTML=cleanup?`<span class="${cleanup.status==='ok'?'status-ok':'status-error'}">${cleanup.status==='ok'?'Last run completed':'Last run needs attention'}</span> · ${new Date(cleanup.finished_at).toLocaleString()}<br>${Number(cleanup.clips_removed||0)} clips, ${Number(cleanup.tracks_removed||0)} private tracks and ${Number(cleanup.analytics_removed||0)} analytics rows removed.${cleanup.error?'<br>'+esc(cleanup.error):''}`:'First cleanup runs about one minute after the server starts.';
+  }catch(e){$('insightCards').innerHTML='<div class="card"><div class="lab">Analytics</div><div class="val" style="font-size:16px">'+esc(e.message)+'</div></div>';}
 }
 load();
 </script>
