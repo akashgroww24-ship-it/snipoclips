@@ -370,15 +370,15 @@ $('#q').oninput=draw;
 $('#sort').onclick=()=>{sortOrder=sortOrder==='newest'?'oldest':'newest';localStorage.setItem('sc_sort_order',sortOrder);draw();};
 
 /* processing — real stages only */
-const S=[['queued','Video imported'],['download','Media downloaded'],['transcribe','Transcript generated'],
-  ['highlights','Finding viral moments'],['rendering','Generating clips'],['done','Clips ready']];
+const S=[['queued','Video imported'],['fetching','Downloading media'],['transcribing','Generating transcript'],
+  ['selecting','Finding viral moments'],['rendering','Generating clips'],['done','Clips ready']];
 function steps(stage, completedClips=0, selectedClips=null, finished=false){
   const i=Math.max(0,S.findIndex(x=>x[0]===stage));
   const total=Number(selectedClips), known=selectedClips!==null&&selectedClips!==undefined&&Number.isInteger(total)&&total>=0;
   const made=Math.max(0,Number(completedClips)||0);
   // Four preparation steps (import, download, transcript, selection), followed
   // by one step per saved clip. Each completed unit has the same weight.
-  const prep=[1,1,2,3,4,4][i];
+  const prep=[0,1,2,3,4,4][i];
   const units=known?4+total:0;
   const complete=finished?units:Math.min(units,prep+(i>=4?made:0));
   const percent=units?Math.min(100,Math.floor(complete/units*100)):null;

@@ -17,6 +17,11 @@ test('completed and pending percentages count selected clips and real completed 
     .map(key=>[key,{style:{},setAttribute(name,value){this[name]=value;},textContent:'',innerHTML:''}]));
   const ctx={ $:key=>nodes[key] };
   vm.runInNewContext(source.slice(progressStart,progressEnd),ctx);
+  vm.runInNewContext("steps('transcribing',0,4)",ctx);
+  assert.equal(nodes['#proc-completed'].textContent,'25% completed');
+  assert.match(nodes['#proc-n'].textContent,/Generating transcript/);
+  vm.runInNewContext("steps('selecting',0,4)",ctx);
+  assert.equal(nodes['#proc-completed'].textContent,'37% completed');
   vm.runInNewContext("steps('rendering',2,8)",ctx);
   assert.equal(nodes['#proc-completed'].textContent,'50% completed');
   assert.equal(nodes['#proc-pending'].textContent,' 50% pending');
