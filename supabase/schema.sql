@@ -40,12 +40,14 @@ create table if not exists public.jobs (
   status      text not null default 'queued',         -- queued | processing | done | error
   stage       text,
   clips_count int default 0,
+  clips_total int,                                   -- selected clip count for job progress
   error       text,
   folder_name text,                                  -- optional display name for this job's clips
   created_at  timestamptz not null default now()
 );
 -- Safe for installations created before folders could be renamed.
 alter table public.jobs add column if not exists folder_name text;
+alter table public.jobs add column if not exists clips_total int;
 create index if not exists jobs_user_idx on public.jobs(user_id, created_at desc);
 
 -- ---------- clips ----------
