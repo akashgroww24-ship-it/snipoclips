@@ -25,6 +25,7 @@ const adminUsersRouter = require('./routes/admin-users');
 const metrics = require('./lib/metrics');
 const { admin: sbAdmin } = require('./lib/supabase');
 const { startCleanupScheduler } = require('./lib/cleanup');
+const { visitMiddleware } = require('./lib/visits');
 
 db.ensureSeed();
 startCleanupScheduler(); // auto-delete clips older than CLIP_RETENTION_DAYS (default 30)
@@ -86,6 +87,7 @@ app.post('/api/billing/webhook', express.raw({ type: '*/*' }), async (req, res) 
 
 app.use(express.json({ limit: '256kb' }));
 app.use(cookieParser());
+app.use(visitMiddleware);
 const globalLimiter = rateLimit({ windowMs: 60_000, max: 200, standardHeaders: true, legacyHeaders: false });
 const loginLimiter  = rateLimit({ windowMs: 15 * 60_000, max: 8, message: { error: 'Too many login attempts. Try again later.' } });
 app.use(globalLimiter);
@@ -109,6 +111,18 @@ app.post('/admin/login', loginLimiter, body('email').isEmail(), body('password')
 });
 app.post('/admin/logout', (req, res) => { res.clearCookie('sc_admin', { path: '/' }); res.json({ ok: true }); });
 app.get('/admin/api/metrics', requireAdmin, async (req, res) => res.json(await metrics.build()));
+app.get('/admin/api/insights', requireAdmin, async (req, res) => {
+  if (!sbAdmin) return res.status(503).json({ error:'Analytics database unavailable' });
+  try {
+    const [snapshot,retention] = await Promise.all([
+      sbAdmin.rpc('admin_analytics_snapshot'),
+      sbAdmin.from('retention_runs').select('finished_at,clips_removed,tracks_removed,analytics_removed,status,error').order('finished_at',{ascending:false}).limit(1).maybeSingle()
+    ]);
+    if (snapshot.error) throw snapshot.error;
+    if (retention.error) throw retention.error;
+    res.json({ ...snapshot.data, retention:retention.data || null, retentionDays:30, updatedAt:new Date().toISOString() });
+  } catch (e) { console.error('[admin/insights]',e.message);res.status(500).json({error:'Could not load analytics'}); }
+});
 app.use('/admin/api', adminUsersRouter);
 
 app.get('/admin/api/stats', requireAdmin, async (req, res) => {
