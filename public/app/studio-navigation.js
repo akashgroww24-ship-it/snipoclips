@@ -54,8 +54,8 @@
   const resolve = t => t[3].startsWith('@') ? [...document.querySelectorAll('#pills .pill')].find(e=>e.textContent===t[3].slice(1)) : t[3] ? one(t[3]) : null;
   const nav = document.createElement('aside');
   nav.id='studio-sidebar'; nav.setAttribute('aria-label','Studio sidebar');
-  nav.innerHTML=`<div class="studio-side-heading"><a href="/app" class="studio-wordmark">Snipo Clips<span>YOUR CREATIVE STUDIO</span></a><button type="button" id="studio-close" aria-label="Close menu">×</button></div>
-    <nav aria-label="Studio"><p class="studio-group">CREATE</p><button type="button" data-studio="create" aria-current="page"><span aria-hidden="true">＋</span>Create clips</button><button type="button" data-studio="reels"><span aria-hidden="true">▶</span>AI Reel Composer</button><p class="studio-group">WORKSPACE</p><button type="button" data-studio="projects"><span aria-hidden="true">▦</span>Folders & clips</button><button type="button" data-studio="social"><span aria-hidden="true">◉</span>Social accounts</button><button type="button" data-studio="guides"><span aria-hidden="true">?</span>Feature guide</button><a href="/pricing"><span aria-hidden="true">◇</span>Plans & pricing</a><button type="button" data-studio="support"><span aria-hidden="true">☏</span>Help & support</button></nav>
+  nav.innerHTML=`<div class="studio-side-heading"><a href="/app" class="studio-wordmark">Snipo Clips<span>YOUR CREATIVE STUDIO</span></a><button type="button" id="studio-close" aria-label="Close menu" title="Toggle menu">×</button></div>
+    <nav aria-label="Studio"><p class="studio-group">CREATE</p><button type="button" data-studio="create" aria-label="Create clips" data-tip="Create clips" aria-current="page"><span class="studio-icon" aria-hidden="true">＋</span><span class="studio-item-label">Create clips</span></button><button type="button" data-studio="reels" aria-label="AI Reel Composer" data-tip="AI Reel Composer"><span class="studio-icon" aria-hidden="true">▶</span><span class="studio-item-label">AI Reel Composer</span></button><p class="studio-group">WORKSPACE</p><button type="button" data-studio="projects" aria-label="Folders & clips" data-tip="Folders & clips"><span class="studio-icon" aria-hidden="true">▦</span><span class="studio-item-label">Folders & clips</span></button><button type="button" data-studio="social" aria-label="Social accounts" data-tip="Social accounts"><span class="studio-icon" aria-hidden="true">◉</span><span class="studio-item-label">Social accounts</span></button><button type="button" data-studio="guides" aria-label="Feature guide" data-tip="Feature guide"><span class="studio-icon" aria-hidden="true">?</span><span class="studio-item-label">Feature guide</span></button><a href="/pricing" aria-label="Plans & pricing" data-tip="Plans & pricing"><span class="studio-icon" aria-hidden="true">◇</span><span class="studio-item-label">Plans & pricing</span></a><button type="button" data-studio="support" aria-label="Help & support" data-tip="Help & support"><span class="studio-icon" aria-hidden="true">☏</span><span class="studio-item-label">Help & support</span></button></nav>
     <div class="studio-tip"><b>A little guidance, right here.</b><p>Tap a ? beside a setting to see what it does.</p><button type="button" data-studio="guides">Explore all features →</button></div>`;
   document.body.appendChild(nav);
   const shade=document.createElement('button'); shade.id='studio-shade'; shade.type='button'; shade.tabIndex=-1; shade.setAttribute('aria-label','Close menu'); shade.hidden=true; document.body.appendChild(shade);
@@ -64,17 +64,18 @@
   const mobile=matchMedia('(max-width: 900px)'); let opened=!mobile.matches;
   function setMenu(value, restore=false){
     opened=value; document.body.classList.toggle('studio-menu-open',opened); toggle.setAttribute('aria-expanded',String(opened));
-    nav.inert=!opened; shade.hidden=!(opened&&mobile.matches);
-    nav.setAttribute('role',mobile.matches?'dialog':'complementary');
+    shade.hidden=!(opened&&mobile.matches);
+    const close=one('#studio-close'); close.textContent=opened?'×':'☰'; close.setAttribute('aria-label',opened?'Close menu':'Expand menu');
+    nav.setAttribute('role',mobile.matches&&opened?'dialog':'complementary');
     if(mobile.matches&&opened) nav.setAttribute('aria-modal','true'); else nav.removeAttribute('aria-modal');
     const scene=one('.scene'); if(scene) scene.inert=mobile.matches&&opened;
     if(restore) toggle.focus();
   }
   toggle.addEventListener('click',()=>{setMenu(!opened); if(opened&&mobile.matches)one('#studio-close').focus();});
-  one('#studio-close').addEventListener('click',()=>setMenu(false,true)); shade.addEventListener('click',()=>setMenu(false,true));
+  one('#studio-close').addEventListener('click',()=>setMenu(!opened,opened)); shade.addEventListener('click',()=>setMenu(false,true));
   mobile.addEventListener('change',()=>setMenu(!mobile.matches)); setMenu(opened);
   nav.addEventListener('keydown',e=>{
-    if(!mobile.matches)return;
+    if(!mobile.matches||!opened)return;
     if(e.key==='Escape'){e.preventDefault();setMenu(false,true);}
     if(e.key==='Tab'){
       const nodes=[...nav.querySelectorAll('a,button')], first=nodes[0],last=nodes[nodes.length-1];
@@ -114,7 +115,7 @@
   dialog.addEventListener('click',e=>{const b=e.target.closest('[data-show]');if(!b)return;const topic=topics.find(t=>t[0]===b.dataset.show);dialog.close();locate(topic);});
   nav.addEventListener('click',e=>{
     const b=e.target.closest('[data-studio]');if(!b)return;
-    if(mobile.matches)setMenu(false);
+    if(mobile.matches&&opened)setMenu(false);
     const action=b.dataset.studio;
     if(action==='guides')return showGuide();
     if(action==='support')return showGuide('support');
