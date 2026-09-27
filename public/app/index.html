@@ -132,7 +132,10 @@
     <div class="proc" id="proc" aria-live="polite">
       <h3 id="proc-t">Analyzing your video…</h3>
       <div class="now" id="proc-n">Just started</div>
-      <div class="pbar"><i id="proc-b"></i></div>
+      <div class="proc-percent"><strong id="proc-completed">Calculating…</strong><strong id="proc-pending"></strong></div>
+      <div class="pbar" id="proc-meter" role="progressbar" aria-label="Job tasks completed" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="proc-b"></i></div>
+      <div class="proc-detail" id="proc-detail">Preparing your job…</div>
+      <p class="proc-explain">Percentages count completed steps and clips; they do not estimate time remaining.</p>
       <div class="steps" id="proc-s"></div>
     </div>
   </section>
