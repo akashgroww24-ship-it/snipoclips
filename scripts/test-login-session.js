@@ -11,16 +11,18 @@ const end = html.indexOf('\ninit();', start);
 assert.ok(start >= 0 && end > start, 'login session check exists');
 const sessionCheck = html.slice(start, end) + '\nglobalThis.check = init();';
 
-async function run(status) {
+async function run(status, recoveryEvent=false) {
   const calls = [];
   const messages = [];
-  let signOuts = 0;
-  const location = { href: '/login' };
+  let signOuts = 0, recoveryShown=0;
+  const location = { href: '/login', hash:'' };
   const client = { auth: {
+    onAuthStateChange:callback=>{if(recoveryEvent)callback('PASSWORD_RECOVERY',{access_token:'test-token'});return {data:{subscription:{unsubscribe(){}}}};},
     getSession: async () => ({ data: { session: { access_token: 'test-token' } } }),
     signOut: async () => { signOuts++; }
   } };
-  const ctx = { location, messages, msg: message => messages.push(message), nextUrl: () => '/app',
+  const ctx = { location, messages, URLSearchParams, msg: message => messages.push(message), nextUrl: () => '/app',
+    recoveryMode:false,showRecovery:()=>{recoveryShown++;ctx.recoveryMode=true;},
     window: { supabase: { createClient: () => client } },
     fetch: async (url, options) => {
       calls.push({ url, options });
@@ -29,7 +31,7 @@ async function run(status) {
     }, console };
   vm.runInNewContext('let supa;\n'+sessionCheck, ctx);
   await ctx.check;
-  return { calls, messages, signOuts, location };
+  return { calls, messages, signOuts, location, recoveryShown };
 }
 
 test('existing session is validated with its bearer token and enters the app', async () => {
@@ -50,6 +52,44 @@ test('temporary server error does not sign a valid session out', async () => {
 test('rejected bearer token signs out the expired session', async () => {
   const r = await run(401);
   assert.equal(r.signOuts, 1);
+});
+
+test('password recovery link shows the reset form instead of redirecting to the app', async () => {
+  const r=await run(200,true);
+  assert.equal(r.recoveryShown,1);
+  assert.equal(r.location.href,'/login');
+  assert.equal(r.calls.length,1,'recovery must not trigger the normal session redirect');
+});
+
+test('password reset email returns to the recovery form', async () => {
+  const start=html.indexOf("$('forgot').onclick=async()=>{");
+  const end=html.indexOf("\n$('resetSave').onclick=",start);
+  assert.ok(start>=0&&end>start);
+  const forgot={};let redirect;
+  const ctx={ $:id=>({forgot,email:{value:'person@example.com'}}[id]),
+    supa:{auth:{resetPasswordForEmail:async(_email,options)=>{redirect=options.redirectTo;return {error:null};}}},
+    location:{origin:'https://snipoclip.com'},msg:()=>{} };
+  vm.runInNewContext(html.slice(start,end),ctx);
+  await forgot.onclick();
+  assert.equal(redirect,'https://snipoclip.com/login');
+});
+
+test('valid recovery token updates password then returns to sign-in', async () => {
+  const start=html.indexOf("$('resetSave').onclick=async()=>{");
+  assert.ok(start>=0);
+  const save={disabled:false},newPassword={value:'a-long-new-password'},confirmPassword={value:'a-long-new-password'};
+  const resetForm={hidden:false},resetMsg={},box={classList:{remove:()=>{}}};
+  let updated,signOuts=0,message;
+  const ctx={recoveryMode:true, $:id=>({resetSave:save,newPassword,confirmPassword,resetForm,resetMsg})[id],
+    supa:{auth:{updateUser:async attrs=>{updated=attrs;return {error:null};},signOut:async()=>{signOuts++;}}},
+    document:{querySelector:()=>box},location:{search:''},
+    setMode:()=>{},msg:value=>{message=value;} };
+  vm.runInNewContext(html.slice(start,html.indexOf('\n</script>',start)),ctx);
+  await save.onclick();
+  assert.equal(updated.password,'a-long-new-password');
+  assert.equal(signOuts,1);
+  assert.equal(resetForm.hidden,true);
+  assert.match(message,/Password changed/);
 });
 
 test('email signup keeps the confirmation message and sends its link to the studio', async () => {
