@@ -328,7 +328,7 @@ function card(c){
     <div class="in"><div class="t">${(c.title||'Untitled').replace(/</g,'&lt;')}</div>
     <div class="m"><span>${c.created_at?new Date(c.created_at).toLocaleDateString():''}</span>
     ${c.url?`<a href="${c.url}" download onclick="event.stopPropagation()">Download</a>`:''}
-    ${youtubeConnected&&c.id?`<button type="button" class="youtube-upload" data-clip="${escapeHtml(c.id)}" title="Upload this clip privately to your connected YouTube channel">Upload privately</button>`:''}</div></div></article>`;
+    ${youtubeConnected&&c.id?`<button type="button" class="youtube-upload" data-clip="${escapeHtml(c.id)}" title="Upload this clip to your connected YouTube channel">Upload to YouTube</button>`:''}</div></div></article>`;
 }
 let youtubeConnected=false;
 async function loadSocial(){
@@ -340,12 +340,17 @@ async function loadSocial(){
       state.configured?'No YouTube channel connected.':'YouTube publishing is not available yet. You can still download your clips.';
     connect.hidden=!state.configured||state.connected;
     disconnect.hidden=!state.connected;
+    $('#youtube-consent').hidden=!state.configured||state.connected;
+    $('#youtube-privacy-label').hidden=!state.connected;
+    connect.disabled=!$('#youtube-consent-check').checked;
     draw();
   }catch(e){label.textContent='Could not check YouTube connection. Refresh to retry.';}
 }
+$('#youtube-consent-check').onchange=()=>{$('#youtube-connect').disabled=!$('#youtube-consent-check').checked;};
 $('#youtube-connect').onclick=async()=>{
+  if(!$('#youtube-consent-check').checked)return toast('Please review the policies','Read the privacy policy and YouTube terms before connecting.','err');
   const b=$('#youtube-connect');b.disabled=true;
-  try{const d=await api('/api/youtube/connect',{method:'POST'});if(!d.url)throw new Error('No authorization URL');location.assign(d.url);}
+  try{const d=await api('/api/youtube/connect',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({acceptedYouTubeTerms:true})});if(!d.url)throw new Error('No authorization URL');location.assign(d.url);}
   catch(e){b.disabled=false;toast('Could not connect YouTube','Please try again later.','err');}
 };
 $('#youtube-disconnect').onclick=async()=>{
@@ -356,8 +361,9 @@ $('#youtube-disconnect').onclick=async()=>{
 };
 async function uploadClipToYouTube(button){
   button.disabled=true;
-  try{await api('/api/youtube/upload',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({clipId:button.dataset.clip,privacy:'private'})});
-    toast('Uploaded privately','Your clip is available in YouTube Studio.');
+  const privacy=$('#youtube-privacy').value;
+  try{await api('/api/youtube/upload',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({clipId:button.dataset.clip,privacy})});
+    toast('Uploaded to YouTube',privacy==='private'?'Your clip is available privately in YouTube Studio.':'Check YouTube Studio for its final visibility; unaudited projects may be restricted to private.');
   }catch(e){toast('YouTube upload failed','Please check your channel connection and try again.','err');button.disabled=false;}
 }
 $('#q').oninput=draw;
@@ -434,7 +440,9 @@ function watch(id){ clearTimeout(poll); activeJobId=id; let n=0, lastCount=0, fa
     }
     if(j.status==='error'){
       activeJobId=null;sessionStorage.removeItem('sc_active_job');
-      toast('Clip generation stopped',count?'Your completed clips are available below.':'Please try again.','err');
+      const reason=String(j.error||'Please try again.');
+      const advice=/rate-limiting|Could not download|download that video/i.test(reason)?' If you own the video, try uploading the file directly.':'';
+      toast('Clip generation stopped',(count?'Your completed clips are available below. ':'')+reason+advice,'err');
       console.error('[job]',j.error);$('#proc').classList.remove('on');reset();load();return;
     }
     if(++n>100)$('#proc-n').textContent='Large videos can take longer. You may leave this page; processing continues.';
