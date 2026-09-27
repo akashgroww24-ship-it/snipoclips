@@ -155,6 +155,10 @@ button,input{font-family:inherit}
 .proc.on{display:block;animation:rise var(--t2) both}
 .proc h3{font-size:14px;font-weight:600}
 .proc .now{font-size:12.5px;color:var(--text-3);margin:3px 0 12px}
+.proc-percent{display:flex;justify-content:space-between;gap:12px;margin:10px 0 7px;color:var(--text-2);font-size:12px}
+.proc-percent strong:first-child{color:var(--lav)}
+.proc-detail{font-size:11px;color:var(--text-2);margin:-6px 0 5px}
+.proc-explain{font-size:10px;color:var(--text-3);margin:0 0 14px;line-height:1.45}
 .pbar{height:4px;border-radius:2px;background:rgba(255,255,255,.07);overflow:hidden;margin-bottom:14px}
 .pbar i{display:block;height:100%;width:0;border-radius:2px;background:var(--grad);
   transition:width var(--t2);box-shadow:0 0 12px var(--glow-m)}
