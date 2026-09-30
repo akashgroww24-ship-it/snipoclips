@@ -98,6 +98,7 @@
 
 <script>
 let supa, mode='in', recoveryMode=false;
+let lastSignupEmail='';
 const $=id=>document.getElementById(id);
 // Where to go after a successful sign-in (set by /app when it redirects here).
 function nextUrl(){
@@ -217,8 +218,17 @@ function setMode(m){ mode=m;
   msg('');
 }
 function showExistingAccount(){
+  $('existingTitle').textContent='Account already exists';
+  $('existingDescription').textContent='This email is already registered. Sign in with your password, or use Continue with Google if that’s how you created your account.';
   setMode('in');
   msg('This email already has an account. Sign in instead.');
+  $('existingAccount').showModal();
+}
+function showUncertainSignup(){
+  $('existingTitle').textContent='Check your email or sign in';
+  $('existingDescription').textContent='If this is a new account, use the confirmation link in your inbox. If you already signed up, sign in or reset your password. No second account has been confirmed here.';
+  setMode('in');
+  msg('Check your inbox. Already signed up? Sign in or reset your password.');
   $('existingAccount').showModal();
 }
 $('existingDismiss').onclick=()=>$('existingAccount').close();
@@ -239,10 +249,13 @@ function _locked(){
 }
 $('submit').onclick=async()=>{
   if(!supa) return;
+  if($('submit').disabled) return;
   if(_locked()) return;
   const email=$('email').value.trim(), password=$('pass').value;
   if(!email||!password){ msg('Enter your email and password'); return; }
+  if(mode==='up' && email.toLowerCase()===lastSignupEmail){ showUncertainSignup(); return; }
   msg('');
+  $('submit').disabled=true;
   try{
     if(mode==='in'){
       const { error }=await supa.auth.signInWithPassword({ email, password });
@@ -260,9 +273,13 @@ $('submit').onclick=async()=>{
       // With email confirmation enabled, Supabase may return an obfuscated
       // user instead of an error for an existing account (no new identity).
       if(data?.user && Array.isArray(data.user.identities) && data.user.identities.length===0)return showExistingAccount();
-      if(data && data.session){ location.href = nextUrl(); return; }
+      if(data && data.session){ lastSignupEmail=email.toLowerCase(); location.href = nextUrl(); return; }
+      // A missing user/identities list cannot prove that an account was made.
+      // Never announce success for an ambiguous, privacy-preserving response.
+      if(!data?.user || !Array.isArray(data.user.identities)) return showUncertainSignup();
+      lastSignupEmail=email.toLowerCase();
       setMode('in');
-      msg('Account created. Check your email to confirm; the link will open your studio.', true);
+      msg('Check your email to confirm your address; the link will open your studio. Already signed up? Sign in instead.', true);
     }
   }catch(e){
     const m = String((e && e.message) || e);
@@ -272,6 +289,8 @@ $('submit').onclick=async()=>{
       msg('Something went wrong. Try again.');
     }
     console.error('[login]', e);
+  }finally{
+    $('submit').disabled=false;
   }
 };
 

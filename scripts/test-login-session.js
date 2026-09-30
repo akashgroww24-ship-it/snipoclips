@@ -61,17 +61,30 @@ test('password recovery link shows the reset form instead of redirecting to the 
   assert.equal(r.calls.length,1,'recovery must not trigger the normal session redirect');
 });
 
-test('password reset email returns to the recovery form', async () => {
-  const start=html.indexOf("$('forgot').onclick=async()=>{");
+test('forgot password opens a separate form and sends a reset link back to login', async () => {
+  const start=html.indexOf("$('forgot').onclick=showForgot;");
   const end=html.indexOf("\n$('resetSave').onclick=",start);
   assert.ok(start>=0&&end>start);
-  const forgot={};let redirect;
-  const ctx={ $:id=>({forgot,email:{value:'person@example.com'}}[id]),
-    supa:{auth:{resetPasswordForEmail:async(_email,options)=>{redirect=options.redirectTo;return {error:null};}}},
-    location:{origin:'https://snipoclip.com'},msg:()=>{} };
+  const forgot={},forgotBack={},forgotForm={},forgotSend={disabled:false};
+  const forgotEmail={value:'',checkValidity:()=>true,focus:()=>{}},email={value:'person@example.com',focus:()=>{}};
+  const forgotMsg={};const box={classList:{add:()=>{},remove:()=>{}}};let redirect,sentEmail;
+  const nodes={forgot,forgotBack,forgotForm,forgotSend,forgotEmail,forgotMsg,email};
+  const ctx={ $:id=>nodes[id],showForgot:()=>{forgotForm.hidden=false;forgotEmail.value=email.value;},
+    document:{querySelector:()=>box},recoveryMode:false,
+    supa:{auth:{resetPasswordForEmail:async(value,options)=>{sentEmail=value;redirect=options.redirectTo;return {error:null};}}},
+    location:{origin:'https://snipoclip.com'} };
   vm.runInNewContext(html.slice(start,end),ctx);
   await forgot.onclick();
+  assert.equal(forgotForm.hidden,false);
+  let prevented=false;
+  await forgotForm.onsubmit({preventDefault:()=>{prevented=true;}});
+  assert.equal(prevented,true);
+  assert.equal(sentEmail,'person@example.com');
   assert.equal(redirect,'https://snipoclip.com/login');
+  assert.match(forgotMsg.textContent,/Check your inbox/);
+  assert.equal(forgotSend.disabled,false);
+  forgotBack.onclick();
+  assert.equal(forgotForm.hidden,true);
 });
 
 test('valid recovery token updates password then returns to sign-in', async () => {
@@ -99,15 +112,42 @@ test('email signup keeps the confirmation message and sends its link to the stud
   const submit = { onclick:null };
   let message='', request;
   const location = { origin:'https://snipoclip.com', href:'/login' };
-  const ctx = { mode:'up', location, console, nextUrl:()=>'/app', _locked:()=>false,
+  const ctx = { mode:'up', lastSignupEmail:'', location, console, nextUrl:()=>'/app', _locked:()=>false,
     $:id=>({submit,email:{value:'new@example.com'},pass:{value:'a-password'}}[id]),
     msg:text=>{message=text;},setMode:()=>{message='';},
-    supa:{auth:{signUp:async input=>{request=input;return {data:{session:null},error:null};}}} };
+    supa:{auth:{signUp:async input=>{request=input;return {data:{user:{identities:[{provider:'email'}]},session:null},error:null};}}} };
   vm.runInNewContext(html.slice(start,end),ctx);
   await submit.onclick();
   assert.equal(request.options.emailRedirectTo,'https://snipoclip.com/app');
   assert.match(message,/Check your email/);
   assert.equal(location.href,'/login');
+});
+
+test('ambiguous signup response never says an account was created', async () => {
+  const start=html.indexOf("$('submit').onclick=async()=>{");
+  const end=html.indexOf("\n$('forgot').onclick=",start);
+  const submit={onclick:null,disabled:false};
+  let uncertain=0,message='';
+  const ctx={mode:'up',lastSignupEmail:'',location:{origin:'https://snipoclip.com',href:'/login'},console,
+    _locked:()=>false,$:id=>({submit,email:{value:'taken@example.com'},pass:{value:'password123'}}[id]),
+    msg:text=>{message=text;},showUncertainSignup:()=>{uncertain++;},
+    supa:{auth:{signUp:async()=>({data:{session:null},error:null})}}};
+  vm.runInNewContext(html.slice(start,end),ctx);
+  await submit.onclick();
+  assert.equal(uncertain,1);assert.equal(message,'');assert.equal(submit.disabled,false);
+});
+
+test('a second signup with the same email does not call Supabase again', async () => {
+  const start=html.indexOf("$('submit').onclick=async()=>{");
+  const end=html.indexOf("\n$('forgot').onclick=",start);
+  const submit={onclick:null,disabled:false};let attempts=0,prompts=0;
+  const ctx={mode:'up',lastSignupEmail:'',location:{origin:'https://snipoclip.com'},console,
+    _locked:()=>false,$:id=>({submit,email:{value:'TAKEN@example.com'},pass:{value:'password123'}}[id]),
+    msg:()=>{},setMode:()=>{},showUncertainSignup:()=>{prompts++;},
+    supa:{auth:{signUp:async()=>{attempts++;return {data:{user:{identities:[{provider:'email'}]},session:null},error:null};}}}};
+  vm.runInNewContext(html.slice(start,end),ctx);
+  await submit.onclick();await submit.onclick();
+  assert.equal(attempts,1);assert.equal(prompts,1);
 });
 
 test('existing email signup prompts sign in for an obfuscated user or an explicit duplicate error', async () => {
@@ -119,7 +159,7 @@ test('existing email signup prompts sign in for an obfuscated user or an explici
   ]) {
     const submit = { onclick:null };
     let prompts=0, message='';
-    const ctx = { mode:'up', location:{origin:'https://snipoclip.com',href:'/login'}, console,
+    const ctx = { mode:'up', lastSignupEmail:'', location:{origin:'https://snipoclip.com',href:'/login'}, console,
       _locked:()=>false, $:id=>({submit,email:{value:'taken@example.com'},pass:{value:'a-password'}}[id]),
       msg:text=>{message=text;}, showExistingAccount:()=>{prompts++;},
       supa:{auth:{signUp:async()=>response}} };
