@@ -14,7 +14,7 @@
     ['ratio','Aspect ratio','Options','#ratio','Choose vertical 9:16, square 1:1, portrait 4:5 or landscape 16:9. Cropping can remove content near the edges.','Pick the format before generating. Use face tracking when it suits your source.'],
     ['duration','Clip length','Options','#duration','Auto lets the system choose clip length. Short, Medium and Long guide the highlight selection.','Choose a length before generating; final length depends on suitable sections in your video.'],
     ['count','Clip count','Options','#count','Request a number of clips, or leave Auto count. Available material and plan limits can reduce the result.','Choose the count before starting a job.'],
-    ['color','Caption color','Options','#captionStyle','Choose yellow highlight, clean white, mint or pink caption styling.','Select a color before generating. Review readability against your video.'],
+    ['color','Caption styles','Options','#caption-gallery-open','Choose from visual presets, customize the look, and preview captions on your own clip.','Choose a preset before generating, or open Edit captions on a finished clip to preview and re-render it.'],
     ['look','Clip style','Options','#clipStyle','Choose an editing preset such as Clean look, Punchy, Sigma edit or Meme.','Choose the look, then review individual effects before generating.'],
     ['language','Spoken language','Options','#language','Auto-detect estimates the spoken language. Hindi and English give transcription a language hint; this is not translation.','Choose the language spoken in the source video.'],
     ['karaoke','Karaoke','Effects','@Karaoke','Highlights caption words as they are spoken.','Turn this on in Options before generating.'],

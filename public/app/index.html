@@ -109,7 +109,7 @@
           <select class="sel" id="ratio"><option value="9:16">9:16 Reels</option><option value="1:1">1:1</option><option value="4:5">4:5</option><option value="16:9">16:9</option></select>
           <select class="sel" id="duration"><option value="auto">Auto length</option><option value="short">Short</option><option value="medium">Medium</option><option value="long">Long</option></select>
           <select class="sel" id="count"><option value="">Auto count</option><option>4</option><option>6</option><option>8</option><option>10</option><option>12</option></select>
-          <select class="sel" id="captionStyle"><option value="classic">Yellow highlight</option><option value="white">Clean white</option><option value="green">Mint</option><option value="pink">Pink</option></select>
+          <button type="button" class="sel" id="caption-gallery-open">Caption styles: Classic ▾</button><input type="hidden" id="captionStyle" value="classic">
         <select class="sel" id="clipStyle" aria-label="Clip style">
           <option value="clean">Clean look</option>
           <option value="karaoke">Punchy</option>
@@ -163,15 +163,43 @@
       <button type="button" class="btn ghost" id="youtube-disconnect" hidden>Disconnect</button>
     </div>
     <label id="youtube-privacy-label" hidden for="youtube-privacy">Upload visibility: <select id="youtube-privacy"><option value="private">Private</option><option value="unlisted">Unlisted</option><option value="public">Public</option></select></label>
+    <div class="meta-connections">
+      <h3>Instagram and Facebook Pages</h3>
+      <p>Instagram requires a Creator or Business account. Facebook publishing requires a Page you can manage. Personal accounts, screen time and browsing activity are unavailable.</p>
+      <label class="social-consent"><input type="checkbox" id="meta-consent"> I agree to connect the selected account for publishing clips I choose. <a href="/#/privacy" target="_blank" rel="noopener">Privacy policy</a></label>
+      <div class="social-row"><button type="button" class="btn prim" id="instagram-connect">Connect Instagram</button><button type="button" class="btn ghost" id="facebook-connect">Connect Facebook Page</button></div>
+      <p id="meta-state" role="status">Checking connections…</p>
+      <div id="meta-accounts"></div>
+      <h4>Reel publications</h4><div id="meta-publications" role="status"></div>
+      <p id="meta-insights">Performance insights will appear after Meta grants the required permission. No personal usage is collected.</p>
+    </div>
   </section>
 </main>
 
 </div></div>
 
+<dialog id="caption-dialog" aria-labelledby="caption-title"><div class="caption-panel"><header><h2 id="caption-title">Caption studio</h2><button type="button" id="caption-close" aria-label="Close caption studio">×</button></header>
+<p>Choose a preset, customize it, then export your clip. The video below shows the actual rendered result after saving.</p><div id="caption-video"></div><div id="caption-gallery" role="group" aria-label="Caption presets"></div>
+<div class="caption-controls"><label>Font <select id="cap-font"><option>Noto Sans Devanagari</option><option>DejaVu Sans</option><option>DejaVu Sans Mono</option></select></label><label>Size <input type="number" id="cap-size" min="40" max="140"></label><label>Weight <select id="cap-weight"><option value="400">Regular</option><option value="700">Bold</option><option value="900">Heavy</option></select></label><label>Text color <input type="color" id="cap-color"></label><label>Highlight color <input type="color" id="cap-highlightColor"></label><label>Outline color <input type="color" id="cap-outlineColor"></label><label>Outline <input type="number" id="cap-outline" min="0" max="8"></label><label>Shadow <input type="number" id="cap-shadow" min="0" max="6"></label><label>Background color <input type="color" id="cap-background"></label><label>Position <select id="cap-position"><option>bottom</option><option>middle</option><option>top</option></select></label><label>Words per line <input type="number" id="cap-wordsPerLine" min="1" max="6"></label><label>Animation <select id="cap-animation"><option>none</option><option>fade</option><option>pop</option></select></label><label><input type="checkbox" id="cap-box"> Text background</label><label><input type="checkbox" id="cap-upper"> Uppercase</label><label><input type="checkbox" id="cap-karaoke"> Word highlighting</label></div>
+<div class="caption-actions"><button type="button" id="cap-reset">Reset to preset</button><button type="button" id="cap-save-preset">Save custom style</button><button type="button" id="cap-preview">Preview on clip</button><button type="button" id="cap-apply">Apply to clip</button></div><div id="cap-mine"></div><p id="cap-status" role="status"></p></div></dialog>
 <button class="fab" id="help" aria-label="Help">💬</button>
+<dialog id="social-publish-dialog" aria-labelledby="social-publish-title">
+  <form id="social-publish-form">
+    <h2 id="social-publish-title">Publish this clip as a Reel</h2>
+    <p>The selected connected account will receive a public Reel after processing.</p>
+    <label for="social-target">Account</label><select id="social-target" required></select>
+    <label for="social-caption">Caption</label><textarea id="social-caption" rows="5" maxlength="2200"></textarea>
+    <label><input id="social-publish-consent" type="checkbox" required> I reviewed this clip and caption and authorize publishing it to the selected account.</label>
+    <p id="social-publish-error" role="alert"></p>
+    <div class="social-dialog-actions"><button type="button" class="btn ghost" id="social-publish-cancel">Cancel</button><button type="submit" class="btn prim" id="social-publish-confirm">Publish Reel</button></div>
+  </form>
+</dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="app.js"></script>
+<link rel="stylesheet" href="caption-styles.css">
+<script src="caption-styles.js" defer></script>
+<script src="social-connectors.js"></script>
 <script src="reel-integrated.js"></script>
 <script src="studio-navigation.js"></script>
 </body>

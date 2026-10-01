@@ -271,7 +271,9 @@ function draw(){ const q=$('#q').value.trim().toLowerCase();
     el.onsubmit=e=>{e.preventDefault();saveFolderRename(el);};
     el.onkeydown=e=>{if(e.key==='Escape'){renamingFolder=null;draw();}};
   });
+  $$('.caption-edit').forEach(b=>b.onclick=()=>{const clip=clips.find(c=>String(c.id)===b.dataset.clip);if(clip&&window.openCaptionEditor)window.openCaptionEditor(clip);});
   $$('.youtube-upload').forEach(b=>b.onclick=()=>uploadClipToYouTube(b));
+  $$('.social-publish').forEach(b=>b.onclick=()=>{const clip=clips.find(c=>String(c.id)===b.dataset.clip);if(clip&&window.openSocialPublish)window.openSocialPublish(clip);});
   $$('.card').forEach(k=>{const v=k.querySelector('video');
     if(v){k.onmouseenter=()=>v.play().catch(()=>{}); k.onmouseleave=()=>{v.pause();v.currentTime=0};} }); }
 function folderTitle(f){
@@ -328,7 +330,9 @@ function card(c){
     <div class="in"><div class="t">${(c.title||'Untitled').replace(/</g,'&lt;')}</div>
     <div class="m"><span>${c.created_at?new Date(c.created_at).toLocaleDateString():''}</span>
     ${c.url?`<a href="${c.url}" download onclick="event.stopPropagation()">Download</a>`:''}
-    ${youtubeConnected&&c.id?`<button type="button" class="youtube-upload" data-clip="${escapeHtml(c.id)}" title="Upload this clip to your connected YouTube channel">Upload to YouTube</button>`:''}</div></div></article>`;
+    ${c.master_path&&c.id?`<button type="button" class="caption-edit" data-clip="${escapeHtml(c.id)}">Edit captions</button>`:''}
+    ${youtubeConnected&&c.id?`<button type="button" class="youtube-upload" data-clip="${escapeHtml(c.id)}" title="Upload this clip to your connected YouTube channel">Upload to YouTube</button>`:''}
+    ${window.socialHasAccounts&&c.id&&c.url?`<button type="button" class="social-publish" data-clip="${escapeHtml(c.id)}">Publish Reel</button>`:''}</div></div></article>`;
 }
 let youtubeConnected=false;
 async function loadSocial(){
@@ -398,6 +402,7 @@ $('#go').onclick=async()=>{
   if(picked) fd.append('video',picked); else fd.append('videoUrl',u);
   fd.append('ratio',$('#ratio').value); fd.append('duration',$('#duration').value);
   fd.append('captionStyle',$('#captionStyle').value);
+  if(window.captionSelection) fd.append('caption',JSON.stringify(window.captionSelection()));
   fd.append('clipStyle',($('#clipStyle')||{}).value||'clean');
   fd.append('audioMode',$('#audioMode').value);
   if($('#count').value) fd.append('count',$('#count').value);

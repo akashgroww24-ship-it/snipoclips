@@ -19,6 +19,7 @@ const clipsRouter = require('./routes/clips');
 const billingRouter = require('./routes/billing');
 const promoRouter = require('./routes/promo');
 const youtubeRouter = require('./routes/youtube');
+const socialRouter = require('./routes/social');
 const reelsRouter = require('./routes/reels');
 const activityRouter = require('./routes/activity');
 const adminUsersRouter = require('./routes/admin-users');
@@ -29,6 +30,7 @@ const { visitMiddleware } = require('./lib/visits');
 
 db.ensureSeed();
 startCleanupScheduler(); // auto-delete clips older than CLIP_RETENTION_DAYS (default 30)
+require('./lib/social-worker').start();
 
 const app = express();
 app.set('trust proxy', 1);
@@ -97,6 +99,7 @@ app.use('/api', clipsRouter);
 app.use('/api', billingRouter);
 app.use('/api/promo', promoRouter);
 app.use('/api', youtubeRouter);
+app.use('/api', socialRouter);
 app.use('/api', reelsRouter);
 app.use('/api', activityRouter);
 app.use('/api/help', require('./routes/help'));

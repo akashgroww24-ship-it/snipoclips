@@ -10,8 +10,10 @@ const { checkQuota, checkMinutes } = require('../lib/quota');
 const { admin } = require('../lib/supabase');
 const { processJob, renderEdit, probeDuration, activeJobs, maxConcurrency } = require('../lib/pipeline');
 const rateLimit = require('express-rate-limit');
+const captionStyles = require('../lib/captionStyles');
 
 const router = express.Router();
+const activeRestyles = new Set();
 
 // SSRF GUARD: the videoUrl is handed to yt-dlp, which will fetch ANY URL —
 // including internal services, cloud metadata (169.254.169.254) and file://.
@@ -68,7 +70,8 @@ router.post('/jobs', requireUser, genLimit, upload.single('video'),
     const prompt = (req.body.prompt || '').toString().slice(0, 800);
     const duration = ['auto','short','medium','long'].includes(req.body.duration) ? req.body.duration : 'auto';
     const count = Math.min(12, Math.max(1, parseInt(req.body.count, 10) || 8));
-    const captionStyle = ['classic','white','green','pink'].includes(req.body.captionStyle) ? req.body.captionStyle : 'classic';
+    let caption; try { caption = captionStyles.validate(req.body.caption ? JSON.parse(req.body.caption) : {preset:req.body.captionStyle || 'classic'}); } catch { return res.status(400).json({error:'Invalid caption style'}); }
+    const captionStyle = caption.preset;
     const clipStyle = ['clean','karaoke','sigma','meme'].includes(req.body.clipStyle) ? req.body.clipStyle : 'clean';
     const enhance = req.body.enhance === '1' || req.body.enhance === 'true' || req.body.enhance === true;
     const audioMode = req.body.audioMode === 'background' ? 'background' : 'speech';
@@ -136,7 +139,7 @@ router.post('/jobs', requireUser, genLimit, upload.single('video'),
     if (error) return res.status(500).json({ error: 'Could not create job' });
 
     // Process asynchronously (in-process worker; swap for a queue at scale).
-    setImmediate(() => processJob(job, { filePath, videoUrl, prompt, duration, count: effCount, captionStyle, clipStyle, enhance, audioMode, broll, ratio, hook, fillers, highlight, progress, faceTrack, emoji, karaoke, language }));
+    setImmediate(() => processJob(job, { filePath, videoUrl, prompt, duration, count: effCount, captionStyle, caption, clipStyle, enhance, audioMode, broll, ratio, hook, fillers, highlight, progress, faceTrack, emoji, karaoke, language }));
     res.json({ jobId: job.id });
   }
 );
@@ -217,6 +220,61 @@ router.get('/me', requireUser, async (req, res) => {
   });
 });
 
+// Public preset catalog and user-owned custom styles.
+router.get('/caption-styles', requireUser, (req,res) => res.json({version:1,presets:captionStyles.presets}));
+router.get('/caption-styles/mine', requireUser, async (req,res) => {
+  const {data,error}=await admin.from('caption_styles').select('id,name,style,is_default,created_at').eq('user_id',req.user.id).order('created_at',{ascending:false}).limit(100);
+  if(error) return res.status(503).json({error:'Caption styles are unavailable until the database migration is applied.'});
+  res.json({styles:data||[]});
+});
+router.post('/caption-styles/mine', requireUser, express.json(), async (req,res) => {
+  const name=typeof req.body?.name==='string'?req.body.name.trim():'';
+  if(!name||name.length>60||/[\x00-\x1f]/.test(name)) return res.status(400).json({error:'Enter a name of 1–60 characters.'});
+  let style; try { const x=captionStyles.validate(req.body.style); style={version:1,preset:x.preset,options:x.options}; } catch { return res.status(400).json({error:'Invalid caption style'}); }
+  const {data,error}=await admin.from('caption_styles').insert({user_id:req.user.id,name,style}).select('id,name,style,is_default').single();
+  if(error) return res.status(503).json({error:'Could not save caption style. Check the migration.'}); res.status(201).json({style:data});
+});
+router.patch('/caption-styles/mine/:id', requireUser, express.json(), async (req,res) => {
+  const name=typeof req.body?.name==='string'?req.body.name.trim():null;
+  if(name!==null&&(!name||name.length>60||/[\x00-\x1f]/.test(name))) return res.status(400).json({error:'Invalid name'});
+  if(name===null && req.body?.is_default!==true) return res.status(400).json({error:'No changes'});
+  if(req.body?.is_default===true){
+    const {data:owned}=await admin.from('caption_styles').select('id').eq('id',req.params.id).eq('user_id',req.user.id).maybeSingle();
+    if(!owned) return res.status(404).json({error:'Style not found'});
+    const {error:clear}=await admin.from('caption_styles').update({is_default:false}).eq('user_id',req.user.id);
+    if(clear) return res.status(500).json({error:'Could not change default'});
+  }
+  const patch={}; if(name!==null) patch.name=name; if(req.body?.is_default===true) patch.is_default=true;
+  const {data,error}=await admin.from('caption_styles').update(patch).eq('id',req.params.id).eq('user_id',req.user.id).select('id,name,style,is_default').maybeSingle();
+  if(error) return res.status(500).json({error:'Could not update style'}); if(!data) return res.status(404).json({error:'Style not found'}); res.json({style:data});
+});
+router.delete('/caption-styles/mine/:id', requireUser, async (req,res) => {
+  const {data,error}=await admin.from('caption_styles').delete().eq('id',req.params.id).eq('user_id',req.user.id).select('id').maybeSingle();
+  if(error) return res.status(500).json({error:'Could not delete style'}); if(!data) return res.status(404).json({error:'Style not found'}); res.json({ok:true});
+});
+
+// Render a short preview from the user's uncaptioned master. This does not overwrite the clip.
+router.post('/clips/:id/caption-preview', requireUser, express.json(), async (req,res) => {
+  let caption; try { caption=captionStyles.validate(req.body?.caption); } catch { return res.status(400).json({error:'Invalid caption style'}); }
+  const {data:clip,error:lookupError}=await admin.from('clips').select('id,user_id,master_path,words,in_start,in_end,edit').eq('id',req.params.id).eq('user_id',req.user.id).maybeSingle();
+  if(lookupError) return res.status(500).json({error:'Could not load clip'});
+  if(!clip) return res.status(404).json({error:'Clip not found'});
+  if(!clip.master_path || !Array.isArray(clip.words)) return res.status(400).json({error:'This clip has no editable master.'});
+  const work=fs.mkdtempSync(path.join(TMP,'caption_preview_'));
+  try {
+    const {data:dl,error:dlError}=await admin.storage.from(CLIPS_BUCKET).download(clip.master_path);
+    if(dlError||!dl) throw new Error('Master unavailable');
+    const master=path.join(work,'master.mp4'); fs.writeFileSync(master,Buffer.from(await dl.arrayBuffer()));
+    const cur=clip.edit||{};
+    const start=Math.max(0,Number(clip.in_start)||0);
+    const end=Math.min(Number(clip.in_end)||start+3,start+3);
+    if(end<=start) return res.status(400).json({error:'Clip timeline unavailable'});
+    const output=await renderEdit(master,clip.words,{caption,captionStyle:caption.preset,in_start:start,in_end:end,ratio:cur.ratio||'9:16',plan:'paid',hook:!!cur.hook,hookText:cur.hookText||'',highlight:!!cur.highlight,emoji:!!cur.emoji,progress:!!cur.progress},0,work);
+    res.set('Cache-Control','no-store');res.type('video/mp4');
+    res.sendFile(output,()=>{try{fs.rmSync(work,{recursive:true,force:true});}catch{}});
+  }catch(e){fs.rmSync(work,{recursive:true,force:true});res.status(500).json({error:'Could not render caption preview'});}
+});
+
 // Re-render a clip with new caption style (the in-app editor).
 router.post('/clips/:id/restyle', requireUser, express.json(), async (req, res) => {
   const { data: clip } = await admin.from('clips').select('*').eq('id', req.params.id).eq('user_id', req.user.id).single();
@@ -225,17 +283,20 @@ router.post('/clips/:id/restyle', requireUser, express.json(), async (req, res) 
   const b = req.body || {};
   const cur = clip.edit || {};
   const truthy = v => v === true || v === '1' || v === 1;
+  let caption;
+  try { caption = b.caption ? captionStyles.validate(b.caption) : captionStyles.fromLegacy({...cur,...b}); }
+  catch { return res.status(400).json({error:'Invalid caption style'}); }
   const edit = {
-    captionStyle: ['classic','white','green','pink'].includes(b.captionStyle) ? b.captionStyle : (cur.captionStyle || 'classic'),
+    captionStyle: caption.preset, caption,
     clipStyle: ['clean','karaoke','sigma','meme'].includes(b.clipStyle) ? b.clipStyle : (cur.clipStyle || 'clean'),
     font: (typeof b.font === 'string' && b.font.trim()) ? b.font.trim().slice(0, 40) : (cur.font || 'Noto Sans Devanagari'),
     fontSize: Math.min(140, Math.max(40, parseInt(b.fontSize, 10) || cur.fontSize || 74)),
     position: ['bottom','middle','top'].includes(b.position) ? b.position : (cur.position || 'bottom'),
-    upper: truthy(b.upper), emoji: truthy(b.emoji), animate: truthy(b.animate),
+    upper: b.upper === undefined ? !!cur.upper : truthy(b.upper), emoji: b.emoji === undefined ? !!cur.emoji : truthy(b.emoji), animate: b.animate === undefined ? !!cur.animate : truthy(b.animate),
     ratio: (cur.ratio || '9:16'),
-    hook: truthy(b.hook),
-    highlight: truthy(b.highlight),
-    progress: truthy(b.progress),
+    hook: b.hook === undefined ? !!cur.hook : truthy(b.hook),
+    highlight: b.highlight === undefined ? !!cur.highlight : truthy(b.highlight),
+    progress: b.progress === undefined ? !!cur.progress : truthy(b.progress),
     // keep the clip's existing karaoke setting unless the request overrides it
     karaoke: (b.karaoke === undefined) ? (cur.karaoke === undefined ? true : !!cur.karaoke) : truthy(b.karaoke),
     hookText: ((typeof b.hookText === 'string' ? b.hookText : (cur.hookText || clip.title || '')) || '').toString().slice(0, 90),
@@ -259,6 +320,8 @@ router.post('/clips/:id/restyle', requireUser, express.json(), async (req, res) 
   }
   edit.words = words;
 
+  if (activeRestyles.has(clip.id)) return res.status(409).json({error:'This clip is already rendering.'});
+  activeRestyles.add(clip.id);
   const work = path.join(TMP, 'edit_' + clip.id + '_' + Date.now());
   fs.mkdirSync(work, { recursive: true });
   try {
@@ -282,13 +345,14 @@ router.post('/clips/:id/restyle', requireUser, express.json(), async (req, res) 
     const buf = fs.readFileSync(out);
     const { error: upErr } = await admin.storage.from(CLIPS_BUCKET).upload(clip.storage_path, buf, { contentType: 'video/mp4', upsert: true, cacheControl: '0' });
     if (upErr) throw new Error('Re-upload failed: ' + upErr.message);
-    const safeEdit = { captionStyle: edit.captionStyle, font: edit.font, fontSize: edit.fontSize, position: edit.position, upper: edit.upper, emoji: edit.emoji, animate: edit.animate, ratio: edit.ratio, hook: edit.hook, hookText: edit.hookText, highlight: edit.highlight, progress: edit.progress };
-    await admin.from('clips').update({ edit: safeEdit, words, in_start: edit.in_start, in_end: edit.in_end }).eq('id', clip.id);
+    const safeEdit = { caption: {version:1,preset:caption.preset,options:caption.options}, captionStyle: edit.captionStyle, font: edit.font, fontSize: edit.fontSize, position: edit.position, upper: edit.upper, emoji: edit.emoji, animate: edit.animate, ratio: edit.ratio, hook: edit.hook, hookText: edit.hookText, highlight: edit.highlight, progress: edit.progress, karaoke: edit.karaoke, clipStyle: edit.clipStyle };
+    await admin.from('clips').update({ edit: safeEdit, words, in_start: edit.in_start, in_end: edit.in_end }).eq('id', clip.id).eq('user_id', req.user.id);
     res.json({ ok: true, url: await sign(clip.storage_path), edit: safeEdit });
   } catch (e) {
     res.status(500).json({ error: String(e.message || e).slice(0, 300) });
   } finally {
     try { fs.rmSync(work, { recursive: true, force: true }); } catch {}
+    activeRestyles.delete(clip.id);
   }
 });
 

@@ -207,6 +207,22 @@ button,input{font-family:inherit}
 .social-row [hidden]{display:none}
 .youtube-upload{font:inherit;font-size:12px;border:0;background:none;color:var(--pink);cursor:pointer}
 .youtube-upload:disabled{opacity:.5;cursor:wait}
+.meta-connections{border-top:1px solid var(--line);margin-top:22px;padding-top:20px}
+.meta-connections h3,.meta-connections h4{margin:0 0 10px}
+.meta-connections h4{margin-top:22px}
+.social-consent{display:block;font-size:13px;line-height:1.6;margin:0 0 15px}
+.social-account-row,.social-publication-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
+.social-account-row .btn{padding:7px 12px}
+.social-publish{font:inherit;font-size:12px;border:0;background:none;color:var(--pink);cursor:pointer}
+#social-publish-dialog{width:min(440px,92vw);padding:24px;border:1px solid var(--line);border-radius:16px;background:#211936;color:#fff}
+#social-publish-dialog::backdrop{background:#080414c9}
+#social-publish-dialog h2{margin-top:0}
+#social-publish-dialog label{display:block;margin:15px 0 6px;font-size:13px}
+#social-publish-dialog select,#social-publish-dialog textarea{width:100%;box-sizing:border-box;background:#2c2144;color:#fff;border:1px solid #66557e;border-radius:8px;padding:10px;font:inherit}
+#social-publish-dialog textarea{resize:vertical}
+#social-publish-dialog input{accent-color:#c274ea}
+.social-dialog-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+#social-publish-error{color:#ff9cb5;font-size:13px}
 .grid{display:flex;flex-wrap:wrap;gap:18px}
 .grid>*{flex:0 0 calc(25% - 13.5px)}
 @supports(display:grid){.grid{display:grid;grid-template-columns:repeat(4,1fr)}.grid>*{flex:initial}}

@@ -1,1 +1,6 @@
 public/test-clips/
+node_modules/
+node_modules
+.env
+.env.*
+!.env.meta.example
