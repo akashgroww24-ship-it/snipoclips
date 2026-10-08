@@ -54,5 +54,6 @@ try{const local=localStorage.getItem(localKey);if(local&&JSON.stringify(JSON.par
 $('#empty').hidden=true;$('#empty').style.display='none';$('#editor-controls').disabled=false;['play','seek','split','save','export','reset'].forEach(id=>$('#'+id).disabled=false);$('#notice').textContent=source.hasMaster?'Edit freely. Your original clip is preserved. Drafts save automatically.':'This older clip has baked-in captions. You can trim and layer it; regenerate the clip to replace its original captions.';$('#save-state').textContent='Draft loaded';render();
 if(result.latest){status('Latest saved export: ');const a=document.createElement('a');a.href=result.latest.url;a.textContent='Download MP4 →';a.target='_blank';a.rel='noopener';$('#export-state').appendChild(a);}
 }catch(e){$('#notice').textContent=e.message;status('Could not open this project. Return to Your folders and retry.');}}
+setInterval(()=>{if(user&&document.visibilityState==='visible')api('/api/activity/heartbeat',{method:'POST',body:JSON.stringify({path:location.pathname})}).catch(()=>{});},30000);
 init();
 })();

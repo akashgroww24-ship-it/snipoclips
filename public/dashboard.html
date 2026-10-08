@@ -124,8 +124,8 @@ async function loadInsights(){
       ['Session minutes',t.activeMinutes30,'Visible app time, last 30 days'],
       ['Source video minutes',t.sourceMinutes30,'Processed since tracking began'],
       ['Clips made',t.clipsCreated30,'Last 30 days'],
-      ['Clips edited',t.clipsEdited30,'Distinct clips, last 30 days'],
-      ['Edit saves',t.editActions30,'Successful re-renders'],
+      ['Caption reels edited',t.clipsEdited30,'Distinct clips, last 30 days'],
+      ['Caption re-renders',t.editActions30,'Successful re-renders'],
       ['Jobs started / failed',`${Number(t.jobsStarted30||0)} / ${Number(t.jobsFailed30||0)}`,'Last 30 days'],
       ['New accounts',t.accountsNew30,'Last 30 days'],
       ['Accounts total',t.accountsTotal,'Accounts are retained']
@@ -146,4 +146,5 @@ async function loadInsights(){
 }
 load();
 </script>
+<script src="admin-operations.js"></script>
 </body></html>

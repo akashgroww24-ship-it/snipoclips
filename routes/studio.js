@@ -1,6 +1,7 @@
 'use strict';
 const express=require('express'),fs=require('fs'),path=require('path'),os=require('os'),crypto=require('crypto'),multer=require('multer'),rateLimit=require('express-rate-limit');
 const {admin}=require('../lib/supabase'),{requireUser}=require('../lib/requireUser'),Model=require('../public/app/studio-model'),{renderStudio,probe}=require('../lib/studio-render'),captionStyles=require('../lib/captionStyles');
+const {recordEvent}=require('../lib/activity');
 const router=express.Router(),bucket=process.env.SUPABASE_CLIPS_BUCKET||'clips',root=process.env.TMP_DIR||path.join(os.tmpdir(),'snipoclips');fs.mkdirSync(root,{recursive:true});
 const jobs=new Map();let rendering=false;const locks=new Set();
 const writes=new Map();
@@ -13,7 +14,7 @@ function validate(p,c){const q=Model.validate(p,sourceDuration(c),c.edit?.studio
 async function update(req,patch){const id=req.clip.id;const task=(writes.get(id)||Promise.resolve()).catch(()=>{}).then(async()=>{const {data,error}=await admin.from('clips').select('edit').eq('id',id).eq('user_id',req.user.id).single();if(error)throw new Error('Could not load project');const edit=data.edit||{};const delta=typeof patch==='function'?patch(edit):patch;const {error:saveError}=await admin.from('clips').update({edit:{...edit,...delta}}).eq('id',id).eq('user_id',req.user.id);if(saveError)throw new Error('Could not save project');});writes.set(id,task);try{return await task;}finally{if(writes.get(id)===task)writes.delete(id);}}
 // Serialise studio writes per clip so autosave cannot overwrite uploaded assets.
 function locked(fn){return async(req,res)=>{if(locks.has(req.clip.id)){if(req.file)fs.rmSync(req.file.path,{force:true});return res.status(409).json({error:'Project is saving; try again'});}locks.add(req.clip.id);try{await fn(req,res);}catch(e){res.status(400).json({error:e.message||'Studio request failed'});}finally{locks.delete(req.clip.id);}};}
-router.get('/studio/:id',requireUser,owned,async(req,res)=>{try{const c=req.clip,d=sourceDuration(c);if(!Number.isFinite(d)||d<=0)return res.status(400).json({error:'This clip has no editable duration'});const assets=await Promise.all((c.edit?.studioAssets||[]).map(async a=>({...a,url:await signed(a.path)})));
+router.get('/studio/:id',requireUser,owned,async(req,res)=>{try{const c=req.clip,d=sourceDuration(c);if(!Number.isFinite(d)||d<=0)return res.status(400).json({error:'This clip has no editable duration'});await recordEvent(req.user.id,'studio_open',{clipId:c.id});const assets=await Promise.all((c.edit?.studioAssets||[]).map(async a=>({...a,url:await signed(a.path)})));
 res.json({clip:{id:c.id,title:c.title,duration:d,start:c.master_path?Number(c.in_start)||0:0,hasMaster:!!c.master_path,url:await signed(c.master_path||c.storage_path),words:c.master_path?(c.words||[]).filter(w=>Number(w.end)>0&&Number(w.start)<d).map(w=>({...w,start:Math.max(0,Number(w.start)),end:Math.min(d,Number(w.end))})).filter(w=>Number.isFinite(w.start)&&Number.isFinite(w.end)&&w.end>w.start):[],caption:c.edit?.caption||null},draft:c.edit?.studioDraft||null,assets,latest:c.edit?.studioLatest?{...c.edit.studioLatest,url:await signed(c.edit.studioLatest.path)}:null});}catch{res.status(503).json({error:'Could not open editor media'});}});
 router.put('/studio/:id/draft',requireUser,owned,locked(async(req,res)=>{const draft=validate(req.body,req.clip);await update(req,{studioDraft:draft});res.json({ok:true,savedAt:new Date().toISOString()});}));
 router.post('/studio/:id/assets',requireUser,limit,owned,(req,res,next)=>{upload.single('file')(req,res,err=>{if(err)return res.status(400).json({error:'Upload a video, image or audio file under 30 MB'});next();});},locked(async(req,res)=>{
@@ -26,6 +27,7 @@ router.post('/studio/:id/export',requireUser,limit,owned,async(req,res)=>{
 if(rendering||require('../lib/pipeline').activeJobs()>0)return res.status(429).json({error:'The server is rendering another video. Try again shortly.'});
 let project;try{project=validate(req.body,req.clip);}catch(e){return res.status(400).json({error:e.message});}
 rendering=true;const id=crypto.randomUUID(),job={id,user:req.user.id,clipId:req.clip.id,status:'rendering',progress:0};jobs.set(id,job);res.status(202).json({jobId:id});
+await recordEvent(req.user.id,'studio_export_started',{clipId:req.clip.id,exportId:id});
 setImmediate(async()=>{const dir=fs.mkdtempSync(path.join(root,'studio_'));let uploaded;
 try{const c=req.clip;const download=async(p,local)=>{const {data,error}=await admin.storage.from(bucket).download(p);if(error||!data)throw new Error('Media unavailable');fs.writeFileSync(local,Buffer.from(await data.arrayBuffer()));return local;};
 const source=await download(c.master_path||c.storage_path,path.join(dir,'source.mp4')),meta=await probe(source);if(project.segments.some(s=>!s.assetId&&s.end>Number(meta.format.duration)+.02))throw new Error('A trim goes beyond the original media');
@@ -36,8 +38,8 @@ uploaded=req.user.id+'/studio/'+c.id+'/'+id+'.mp4';const {error}=await admin.sto
 await update(req,{studioLatest:{path:uploaded,name:project.name,createdAt:new Date().toISOString(),duration:Model.duration(project)}});
 // Keep export paths for retention without modifying the source or generated clip.
 const {data:fresh}=await admin.from('clips').select('edit').eq('id',c.id).eq('user_id',req.user.id).single();const exports=[...(fresh?.edit?.studioExports||[]),uploaded];await update(req,{studioExports:exports.slice(-10)});if(exports.length>10)await admin.storage.from(bucket).remove(exports.slice(0,-10));
-job.status='done';job.progress=100;job.url=await signed(uploaded);
-}catch(e){job.status='error';job.error='Export failed. Check the media and retry.';console.error('[studio export]',String(e.message).slice(0,300));if(uploaded)await admin.storage.from(bucket).remove([uploaded]);}
+job.url=await signed(uploaded);job.status='done';job.progress=100;await recordEvent(req.user.id,'studio_export_done',{clipId:c.id,exportId:id,duration:Model.duration(project)});
+}catch(e){await recordEvent(req.user.id,'studio_export_failed',{clipId:req.clip.id,exportId:id});job.status='error';job.error='Export failed. Check the media and retry.';console.error('[studio export]',String(e.message).slice(0,300));if(uploaded)await admin.storage.from(bucket).remove([uploaded]);}
 finally{fs.rmSync(dir,{recursive:true,force:true});rendering=false;setTimeout(()=>jobs.delete(id),3600000).unref();}});
 });
 router.get('/studio/:id/exports/:jobId',requireUser,owned,(req,res)=>{const j=jobs.get(req.params.jobId);if(!j||j.user!==req.user.id||j.clipId!==req.clip.id)return res.status(404).json({error:'Export session ended. Reopen the editor to check the latest saved export.'});res.json({status:j.status,progress:j.progress,url:j.url,error:j.error});});

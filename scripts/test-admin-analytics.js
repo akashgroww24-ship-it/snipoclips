@@ -50,3 +50,18 @@ test('retention removes rendered and editable files before their rows',async()=>
   assert.equal(await ctx.module.exports.removeMedia('clips','clips',['storage_path','master_path'],'2026-01-01'),1);
   assert.deepEqual(order,['clip.mp4,master.mp4','rows']);
 });
+
+test('admin operations API rejects unauthenticated users and validates drilldown IDs',async()=>{
+ const express=require('express');let calls=0;
+ const admin={rpc:async(name,args)=>{calls++;assert.equal(name,'admin_operations');assert.equal(args.p_days,30);return {data:{summary:{exportsDone:2,editedReels:1}},error:null}}};
+ const mod={exports:{}};vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../routes/admin-users.js'),'utf8'),{module:mod,console,require:id=>id==='../lib/auth'?{requireAdmin:(req,res,next)=>req.headers.authorization==='Bearer test-admin'?next():res.status(401).json({error:'Not signed in'})}:id==='../lib/supabase'?{admin}:require(id)});
+ const app=express();app.use('/admin/api',mod.exports);const server=app.listen(0);await new Promise(r=>server.once('listening',r));const base='http://127.0.0.1:'+server.address().port;
+ try{assert.equal((await fetch(base+'/admin/api/operations')).status,401);assert.equal(calls,0);let r=await fetch(base+'/admin/api/operations?days=500',{headers:{Authorization:'Bearer test-admin'}});assert.equal(r.status,200);assert.equal((await r.json()).summary.editedReels,1);r=await fetch(base+'/admin/api/users/not-a-uuid',{headers:{Authorization:'Bearer test-admin'}});assert.equal(r.status,400);}finally{await new Promise(r=>server.close(r));}
+});
+test('activity telemetry excludes heartbeat noise and tolerates recording failures',async()=>{
+ const events=[];const admin={from:()=>({insert:async row=>{events.push(row);return {error:null}},upsert:async()=>({error:null})})};const mod={exports:{}};
+ vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../lib/activity.js'),'utf8'),{module:mod,console,Date,require:id=>id==='./supabase'?{admin}:require(id)});
+ await mod.exports.logAction('alice',{method:'POST',originalUrl:'/api/activity/heartbeat'},200);assert.equal(events.length,0);
+ await mod.exports.recordEvent('alice','studio_export_done',{clipId:'clip-1'});assert.equal(events[0].event_type,'studio_export_done');assert.equal(events[0].metadata.clipId,'clip-1');
+ await mod.exports.logAction('alice',{method:'PUT',originalUrl:'/api/studio/clip-1/draft?token=secret'},200);assert.equal(events[1].path,'/api/studio/clip-1/draft');assert.ok(!events[1].action.includes('secret'));
+});
