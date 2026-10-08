@@ -336,13 +336,21 @@ function card(c){
     ${window.socialHasAccounts&&c.id&&c.url?`<button type="button" class="social-publish" data-clip="${escapeHtml(c.id)}">Publish Reel</button>`:''}</div></div></article>`;
 }
 let youtubeConnected=false;
+function readYouTubeNotice(){
+const youtubeCallback=new URLSearchParams(location.search);
+const youtubeNotice=youtubeCallback.get('yt')==='connected'?'YouTube connected.':youtubeCallback.get('yt')==='error'?youtubeCallback.get('msg')||'YouTube connection could not finish. Please reconnect.':'';
+if(youtubeCallback.has('yt')){const url=new URL(location.href);url.searchParams.delete('yt');url.searchParams.delete('msg');history.replaceState(null,'',url.pathname+url.search+url.hash);}
+return youtubeNotice;
+}
+let youtubeCallbackNotice;
 async function loadSocial(){
+  if(youtubeCallbackNotice===undefined)youtubeCallbackNotice=readYouTubeNotice();
   const label=$('#youtube-state'), connect=$('#youtube-connect'), disconnect=$('#youtube-disconnect');
   try{
     const state=await api('/api/youtube/status',{cache:'no-store'});
     youtubeConnected=!!state.connected;
-    label.textContent=state.connected?'Connected: '+(state.channel?.channel_title||'YouTube channel'):
-      state.configured?'No YouTube channel connected.':'YouTube publishing is not available yet. You can still download your clips.';
+    label.textContent=(youtubeCallbackNotice?youtubeCallbackNotice+' ':'')+(state.connected?'Connected: '+(state.channel?.channel_title||'YouTube channel'):
+      state.reconnectRequired?'Your YouTube connection expired. Please reconnect.':state.configured?'No YouTube channel connected.':'YouTube publishing awaits server setup. You can still download your clips.');
     connect.hidden=!state.configured||state.connected;
     disconnect.hidden=!state.connected;
     $('#youtube-consent').hidden=!state.configured||state.connected;
@@ -356,7 +364,7 @@ $('#youtube-connect').onclick=async()=>{
   if(!$('#youtube-consent-check').checked)return toast('Please review the policies','Read the privacy policy and YouTube terms before connecting.','err');
   const b=$('#youtube-connect');b.disabled=true;
   try{const d=await api('/api/youtube/connect',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({acceptedYouTubeTerms:true})});if(!d.url)throw new Error('No authorization URL');location.assign(d.url);}
-  catch(e){b.disabled=false;toast('Could not connect YouTube','Please try again later.','err');}
+  catch(e){b.disabled=false;toast('Could not connect YouTube',e.message||'Please try again later.','err');}
 };
 $('#youtube-disconnect').onclick=async()=>{
   if(!confirm('Disconnect your YouTube channel from Snipo Clips?'))return;

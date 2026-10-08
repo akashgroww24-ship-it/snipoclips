@@ -9,7 +9,18 @@ const providers=['instagram','facebook'];
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const hash=s=>crypto.createHash('sha256').update(s).digest('hex');
 const publicAccount='id,provider,external_id,display_name,token_expires_at,status,created_at';
+const yt=require('../lib/youtube');
 const publicPost='id,account_id,clip_id,status,permalink,error_code,created_at,updated_at';
+
+// Feature availability only: no account data, credentials, or token values.
+router.get('/social/capabilities',(req,res)=>{
+  const present=key=>!!process.env[key]?.trim();
+  const setup=provider=>{
+    const prefix=provider==='instagram'?'META_INSTAGRAM':'META_FACEBOOK';
+    return {configured:meta.configured(provider),credentials:present(prefix+'_APP_ID')&&present(prefix+'_APP_SECRET'),redirect:/^https:\/\//.test(process.env[prefix+'_REDIRECT_URI']||''),apiVersion:/^v\d+\.\d+$/.test(process.env.META_GRAPH_VERSION||'')};
+  };
+  res.set('Cache-Control','no-store').json({youtube:{configured:yt.configured()},instagram:setup('instagram'),facebook:setup('facebook')});
+});
 
 router.get('/social/accounts',requireUser,async(req,res)=>{
   const {data,error}=await admin.from('social_accounts').select(publicAccount).eq('user_id',req.user.id).order('created_at',{ascending:false});
@@ -33,15 +44,15 @@ router.post('/social/:provider/connect',requireUser,async(req,res)=>{
 
 router.get('/social/:provider/callback',async(req,res)=>{
   const provider=req.params.provider;
-  const done=(status)=>res.redirect(303,'/app?social='+encodeURIComponent(status));
+  const done=(status,reason)=>res.redirect(303,'/app?social='+encodeURIComponent(status)+(reason?'&socialReason='+encodeURIComponent(reason):''));
   if(!providers.includes(provider))return done('error');
-  if(!admin||!meta.configured(provider))return done('error');
+  if(!admin||!meta.configured(provider))return done('error','setup');
   const state=req.query.state;
-  if(typeof state!=='string'||state.length<30||state.length>100)return done('error');
+  if(typeof state!=='string'||state.length<30||state.length>100)return done('error','expired');
   // Delete and return in a single database operation: state cannot be replayed.
   const {data:record,error:consumeError}=await admin.from('social_oauth_states').delete().eq('state_hash',hash(state)).eq('provider',provider).select('user_id,expires_at').maybeSingle();
-  if(consumeError||!record||new Date(record.expires_at).getTime()<Date.now())return done('error');
-  if(req.query.error)return done('denied');
+  if(consumeError||!record||new Date(record.expires_at).getTime()<Date.now())return done('error','expired');
+  if(req.query.error)return done('denied','denied');
   const code=req.query.code;
   if(typeof code!=='string'||!code||code.length>4000)return done('error');
   try{
@@ -56,7 +67,7 @@ router.get('/social/:provider/callback',async(req,res)=>{
       if(error)throw error;
     }
     return done('connected');
-  }catch(e){console.error('[social callback]',/^[A-Z_]+$/.test(e.message||'')?e.message:'META_CONNECT_FAILED');return done('error');}
+  }catch(e){console.error('[social callback]',/^[A-Z_]+$/.test(e.message||'')?e.message:'META_CONNECT_FAILED');return done('error',({INSTAGRAM_PROFESSIONAL_REQUIRED:'professional',FACEBOOK_PAGE_REQUIRED:'page',META_PUBLISH_PERMISSION_REQUIRED:'permissions',META_PERMISSIONS_REQUIRED:'permissions'})[e.message]||'failed');}
 });
 
 router.delete('/social/accounts/:id',requireUser,async(req,res)=>{

@@ -1,6 +1,7 @@
 /* Meta publishing UI. Users always select a finished clip, destination and caption. */
 (()=>{
   const byId=id=>document.getElementById(id);
+  let callbackNotice='',configured={};
   let accounts=[],selectedClip=null,attemptKey=null,pollTimer=null;
   const state=byId('meta-state'),list=byId('meta-accounts'),publications=byId('meta-publications');
   const dialog=byId('social-publish-dialog');
@@ -8,8 +9,9 @@
   async function loadAccounts(){
     try{
       const result=await api('/api/social/accounts',{cache:'no-store'});
-      accounts=result.accounts||[];
-      state.textContent=accounts.length?`${accounts.length} connected account${accounts.length===1?'':'s'}`:'No Meta accounts connected.';
+      accounts=result.accounts||[];configured=result.configured||{};
+      const unavailable=['instagram','facebook'].filter(p=>!configured[p]).map(p=>p==='instagram'?'Instagram':'Facebook');
+      state.textContent=[callbackNotice,accounts.length?`${accounts.length} connected account${accounts.length===1?'':'s'}`:'No Meta accounts connected.',unavailable.length?unavailable.join(' and ')+' publishing awaits server setup. You can still download your clips.':''].filter(Boolean).join(' ');
       for(const provider of ['instagram','facebook']){
         const button=byId(provider+'-connect');
         button.disabled=!result.configured?.[provider]||!byId('meta-consent').checked;
@@ -55,7 +57,7 @@
   byId('meta-consent').onchange=()=>{
     for(const provider of ['instagram','facebook']){
       const button=byId(provider+'-connect');
-      button.disabled=!byId('meta-consent').checked||button.title==='Waiting for Meta app setup';
+      button.disabled=!byId('meta-consent').checked||!configured[provider];
     }
   };
   for(const provider of ['instagram','facebook'])byId(provider+'-connect').onclick=async()=>{
@@ -90,7 +92,11 @@
     finally{button.disabled=false;}
   };
   const outcome=new URLSearchParams(location.search).get('social');
-  if(outcome){state.textContent=outcome==='connected'?'Account connected.':'Connection was cancelled or could not be completed.';
-    const url=new URL(location.href);url.searchParams.delete('social');history.replaceState(null,'',url.pathname+url.search+url.hash);}
+  if(outcome){
+    const reason=new URLSearchParams(location.search).get('socialReason');
+    const messages={setup:'This connector needs server setup.',expired:'Connection expired. Start Connect again.',denied:'Authorization was cancelled or refused. Try again and grant the publishing permissions.',professional:'Use an Instagram Business or Creator account.',page:'Choose a Facebook Page where you can create content.',permissions:'Publishing permission was not granted. Reconnect and approve the requested permissions.',failed:'Connection could not finish. Check account eligibility and app access, then retry.'};
+    callbackNotice=outcome==='connected'?'Account connected.':messages[reason]||messages.failed;
+    const url=new URL(location.href);url.searchParams.delete('social');url.searchParams.delete('socialReason');history.replaceState(null,'',url.pathname+url.search+url.hash);
+  }
   loadAccounts().then(loadPublications);
 })();

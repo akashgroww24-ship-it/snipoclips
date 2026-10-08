@@ -1,6 +1,7 @@
 // routes/youtube.js — connect a YouTube channel (OAuth) and one-click upload
 // clips as Shorts. Tokens are stored encrypted; secrets never reach the browser.
 const express = require('express');
+const crypto = require('node:crypto');
 const jwt = require('jsonwebtoken');
 const { requireUser } = require('../lib/requireUser');
 const { admin } = require('../lib/supabase');
@@ -14,29 +15,34 @@ const MAX_ATTEMPTS = 3;
 // ---- connection status (also tells the UI whether the feature is set up) ----
 router.get('/youtube/status', requireUser, async (req, res) => {
   if (!yt.configured()) return res.json({ configured: false, connected: false });
-  const { data } = await admin.from('youtube_accounts').select('channel_id,channel_title,channel_thumb').eq('user_id', req.user.id).single();
-  res.json({ configured: true, connected: !!data, channel: data || null });
+  const { data, error } = await admin.from('youtube_accounts').select('channel_id,channel_title,channel_thumb,expiry,enc_refresh').eq('user_id', req.user.id).maybeSingle();
+  if(error) return res.status(503).json({error:'Could not check YouTube connection. Please retry.'});
+  const reconnectRequired=!!data&&!data.enc_refresh&&(!data.expiry||new Date(data.expiry).getTime()<Date.now()+60000);
+  const channel=data?{channel_id:data.channel_id,channel_title:data.channel_title,channel_thumb:data.channel_thumb}:null;
+  res.json({ configured:true,connected:!!data&&!reconnectRequired,reconnectRequired,channel });
 });
 
 // ---- step 1: hand the browser a Google consent URL (state ties it to the user) ----
 router.post('/youtube/connect', requireUser, async (req, res) => {
   if (!yt.configured()) return res.status(501).json({ error: 'YouTube upload is not configured on this server yet.' });
   if (req.body?.acceptedYouTubeTerms !== true) return res.status(400).json({ error: 'Review the privacy policy and YouTube terms before connecting.' });
-  const state = jwt.sign({ uid: req.user.id, n: Math.random().toString(36).slice(2) }, process.env.JWT_SECRET, { expiresIn: '10m' });
-  res.json({ url: yt.authUrl(state, yt.redirectUri(req)) });
+  const redirect=yt.redirectUri(req);
+  const state = jwt.sign({ uid:req.user.id,purpose:'youtube-connect',redirect,n:crypto.randomBytes(32).toString('base64url') }, process.env.JWT_SECRET, { expiresIn: '10m' });
+  res.json({ url:yt.authUrl(state,redirect) });
 });
 
 // ---- step 2: Google redirects here with ?code&state (public route, no bearer) ----
 router.get('/youtube/callback', async (req, res) => {
   const done = (ok, msg) => res.redirect(`/app?yt=${ok ? 'connected' : 'error'}${msg ? '&msg=' + encodeURIComponent(msg) : ''}`);
   try {
-    if (req.query.error) return done(false, String(req.query.error));
+    if (req.query.error) return done(false, 'Authorization was cancelled or refused. Check Google app access and try again.');
     const { code, state } = req.query;
     if (!code || !state) return done(false, 'missing code');
-    let uid;
-    try { uid = jwt.verify(String(state), process.env.JWT_SECRET).uid; } catch { return done(false, 'invalid state'); }
-
-    const tok = await yt.exchangeCode(String(code), yt.redirectUri(req));
+    let claims;
+    try { claims=jwt.verify(String(state),process.env.JWT_SECRET);if(!claims.uid||claims.purpose!=='youtube-connect'||typeof claims.redirect!=='string')throw new Error('Invalid state'); } catch { return done(false,'Connection expired. Start Connect YouTube again.'); }
+    const uid=claims.uid;
+    // Reuse the exact URI sent to Google, even if the callback host differs.
+    const tok = await yt.exchangeCode(String(code),claims.redirect);
     const channel = await yt.getChannel(tok.access_token);
     if (!channel) return done(false, 'No YouTube channel found on this Google account');
     const row = {
@@ -55,12 +61,14 @@ router.get('/youtube/callback', async (req, res) => {
     if (saveError) throw new Error('Could not save YouTube connection');
     done(true);
   } catch (e) {
-    done(false, (e.message || 'connect failed').slice(0, 120));
+    console.error('[youtube callback]',e.code||'YOUTUBE_CONNECT_FAILED');
+    done(false,e.code==='YOUTUBE_REDIRECT_MISMATCH'?'Google callback URL does not match the app configuration. Contact support.':e.code==='YOUTUBE_CLIENT_INVALID'?'Google OAuth credentials need attention. Contact support.':'YouTube connection could not finish. Check app access, permissions, and try again.');
   }
 });
 
 router.post('/youtube/disconnect', requireUser, async (req, res) => {
-  await admin.from('youtube_accounts').delete().eq('user_id', req.user.id);
+  const {error}=await admin.from('youtube_accounts').delete().eq('user_id', req.user.id);
+  if(error)return res.status(503).json({error:'Could not disconnect YouTube. Please retry.'});
   res.json({ ok: true });
 });
 
