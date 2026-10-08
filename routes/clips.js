@@ -346,6 +346,8 @@ router.post('/clips/:id/restyle', requireUser, express.json(), async (req, res) 
     const { error: upErr } = await admin.storage.from(CLIPS_BUCKET).upload(clip.storage_path, buf, { contentType: 'video/mp4', upsert: true, cacheControl: '0' });
     if (upErr) throw new Error('Re-upload failed: ' + upErr.message);
     const safeEdit = { caption: {version:1,preset:caption.preset,options:caption.options}, captionStyle: edit.captionStyle, font: edit.font, fontSize: edit.fontSize, position: edit.position, upper: edit.upper, emoji: edit.emoji, animate: edit.animate, ratio: edit.ratio, hook: edit.hook, hookText: edit.hookText, highlight: edit.highlight, progress: edit.progress, karaoke: edit.karaoke, clipStyle: edit.clipStyle };
+    const { data: current } = await admin.from('clips').select('edit').eq('id', clip.id).eq('user_id', req.user.id).single();
+    for (const key of ['studioDraft','studioAssets','studioLatest','studioExports']) { if (current?.edit?.[key] !== undefined) safeEdit[key] = current.edit[key]; }
     await admin.from('clips').update({ edit: safeEdit, words, in_start: edit.in_start, in_end: edit.in_end }).eq('id', clip.id).eq('user_id', req.user.id);
     res.json({ ok: true, url: await sign(clip.storage_path), edit: safeEdit });
   } catch (e) {

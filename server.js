@@ -96,6 +96,7 @@ app.use(globalLimiter);
 
 app.get('/api/public-config', (req, res) => res.json({ supabaseUrl: process.env.SUPABASE_URL || '', supabaseAnonKey: process.env.SUPABASE_ANON_KEY || '' }));
 app.use('/api', clipsRouter);
+app.use('/api', require('./routes/studio'));
 app.use('/api', billingRouter);
 app.use('/api/promo', promoRouter);
 app.use('/api', youtubeRouter);

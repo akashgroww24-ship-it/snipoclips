@@ -331,6 +331,7 @@ function card(c){
     <div class="m"><span>${c.created_at?new Date(c.created_at).toLocaleDateString():''}</span>
     ${c.url?`<a href="${c.url}" download onclick="event.stopPropagation()">Download</a>`:''}
     ${c.master_path&&c.id?`<button type="button" class="caption-edit" data-clip="${escapeHtml(c.id)}">Edit captions</button>`:''}
+    ${c.id&&c.url?`<a class="studio-edit" href="/app/studio.html?clip=${encodeURIComponent(c.id)}">Edit video ↗</a>`:''}
     ${youtubeConnected&&c.id?`<button type="button" class="youtube-upload" data-clip="${escapeHtml(c.id)}" title="Upload this clip to your connected YouTube channel">Upload to YouTube</button>`:''}
     ${window.socialHasAccounts&&c.id&&c.url?`<button type="button" class="social-publish" data-clip="${escapeHtml(c.id)}">Publish Reel</button>`:''}</div></div></article>`;
 }
