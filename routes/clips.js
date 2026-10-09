@@ -11,6 +11,7 @@ const { admin } = require('../lib/supabase');
 const { processJob, renderEdit, probeDuration, activeJobs, maxConcurrency } = require('../lib/pipeline');
 const rateLimit = require('express-rate-limit');
 const captionStyles = require('../lib/captionStyles');
+const { captionWords, visibleWords } = require('../lib/captionText');
 
 const router = express.Router();
 const activeRestyles = new Set();
@@ -195,9 +196,9 @@ router.patch('/folders/:jobId', requireUser, async (req, res) => {
 
 // Caption text for the editor (fetched on demand so the clips list stays light).
 router.get('/clips/:id/text', requireUser, async (req, res) => {
-  const { data: clip } = await admin.from('clips').select('words').eq('id', req.params.id).eq('user_id', req.user.id).single();
+  const { data: clip } = await admin.from('clips').select('words,master_path,in_start,in_end').eq('id', req.params.id).eq('user_id', req.user.id).single();
   if (!clip) return res.status(404).json({ error: 'Not found' });
-  res.json({ text: (clip.words || []).map(w => w.word).join(' ') });
+  res.json({ text: visibleWords(clip.words,clip.in_start,clip.in_end).map(w => w.word).join(' '), editable: !!clip.master_path && Array.isArray(clip.words) && clip.words.length > 0 });
 });
 
 // Current plan + remaining quota for the UI.
@@ -260,6 +261,7 @@ router.post('/clips/:id/caption-preview', requireUser, express.json(), async (re
   if(lookupError) return res.status(500).json({error:'Could not load clip'});
   if(!clip) return res.status(404).json({error:'Clip not found'});
   if(!clip.master_path || !Array.isArray(clip.words)) return res.status(400).json({error:'This clip has no editable master.'});
+  let words; try { words=captionWords(clip.words,req.body?.text,{start:clip.in_start,end:clip.in_end}); } catch(e) { return res.status(400).json({error:e.message}); }
   const work=fs.mkdtempSync(path.join(TMP,'caption_preview_'));
   try {
     const {data:dl,error:dlError}=await admin.storage.from(CLIPS_BUCKET).download(clip.master_path);
@@ -269,7 +271,7 @@ router.post('/clips/:id/caption-preview', requireUser, express.json(), async (re
     const start=Math.max(0,Number(clip.in_start)||0);
     const end=Math.min(Number(clip.in_end)||start+3,start+3);
     if(end<=start) return res.status(400).json({error:'Clip timeline unavailable'});
-    const output=await renderEdit(master,clip.words,{caption,captionStyle:caption.preset,in_start:start,in_end:end,ratio:cur.ratio||'9:16',plan:'paid',hook:!!cur.hook,hookText:cur.hookText||'',highlight:!!cur.highlight,emoji:!!cur.emoji,progress:!!cur.progress},0,work);
+    const output=await renderEdit(master,words,{caption,captionStyle:caption.preset,in_start:start,in_end:end,ratio:cur.ratio||'9:16',plan:'paid',hook:!!cur.hook,hookText:cur.hookText||'',highlight:!!cur.highlight,emoji:!!cur.emoji,progress:!!cur.progress},0,work);
     res.set('Cache-Control','no-store');res.type('video/mp4');
     res.sendFile(output,()=>{try{fs.rmSync(work,{recursive:true,force:true});}catch{}});
   }catch(e){fs.rmSync(work,{recursive:true,force:true});res.status(500).json({error:'Could not render caption preview'});}
@@ -304,20 +306,10 @@ router.post('/clips/:id/restyle', requireUser, express.json(), async (req, res) 
   };
   try { const { data: prof } = await admin.from('profiles').select('plan').eq('id', req.user.id).single(); if (prof && prof.plan) edit.plan = prof.plan; } catch {}
 
-  // Edited caption text: remap the new words onto the clip's existing timings.
-  let words = clip.words;
-  if (typeof b.text === 'string' && b.text.trim()) {
-    const toks = b.text.replace(/\s+/g, ' ').trim().split(' ').filter(Boolean).slice(0, 400);
-    const orig = clip.words || [];
-    if (toks.length && orig.length) {
-      if (toks.length === orig.length) {
-        words = toks.map((t, i) => ({ word: t.slice(0, 40), start: orig[i].start, end: orig[i].end }));
-      } else {
-        const t0 = orig[0].start, t1 = orig[orig.length - 1].end, span = Math.max(0.3, t1 - t0), step = span / toks.length;
-        words = toks.map((t, i) => ({ word: t.slice(0, 40), start: +(t0 + i * step).toFixed(3), end: +(t0 + (i + 1) * step).toFixed(3) }));
-      }
-    }
-  }
+  // Preview and full export use the same corrected transcript and timing rules.
+  let words;
+  try { words = captionWords(clip.words,b.text,{start:clip.in_start,end:clip.in_end}); }
+  catch(e) { return res.status(400).json({error:e.message}); }
   edit.words = words;
 
   if (activeRestyles.has(clip.id)) return res.status(409).json({error:'This clip is already rendering.'});
@@ -348,7 +340,8 @@ router.post('/clips/:id/restyle', requireUser, express.json(), async (req, res) 
     const safeEdit = { caption: {version:1,preset:caption.preset,options:caption.options}, captionStyle: edit.captionStyle, font: edit.font, fontSize: edit.fontSize, position: edit.position, upper: edit.upper, emoji: edit.emoji, animate: edit.animate, ratio: edit.ratio, hook: edit.hook, hookText: edit.hookText, highlight: edit.highlight, progress: edit.progress, karaoke: edit.karaoke, clipStyle: edit.clipStyle };
     const { data: current } = await admin.from('clips').select('edit').eq('id', clip.id).eq('user_id', req.user.id).single();
     for (const key of ['studioDraft','studioAssets','studioLatest','studioExports']) { if (current?.edit?.[key] !== undefined) safeEdit[key] = current.edit[key]; }
-    await admin.from('clips').update({ edit: safeEdit, words, in_start: edit.in_start, in_end: edit.in_end }).eq('id', clip.id).eq('user_id', req.user.id);
+    const {error:saveError} = await admin.from('clips').update({ edit: safeEdit, words, in_start: edit.in_start, in_end: edit.in_end }).eq('id', clip.id).eq('user_id', req.user.id);
+    if(saveError) throw new Error('Video rendered, but caption changes could not be saved. Please retry.');
     res.json({ ok: true, url: await sign(clip.storage_path), edit: safeEdit });
   } catch (e) {
     res.status(500).json({ error: String(e.message || e).slice(0, 300) });

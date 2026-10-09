@@ -70,3 +70,30 @@ test('Studio preset selection replaces stale overrides and export renders visibl
   if(images.length){assert.notDeepEqual(images[0],images[1]);assert.notDeepEqual(images[1],images[2]);}
  }finally{fs.rmSync(dir,{recursive:true,force:true});}
 });
+
+test('English transcript corrections keep timings and reject silent truncation',()=>{
+ const {captionWords}=require('../lib/captionText');
+ const original=[{word:'Wrong',start:10,end:11},{word:'words',start:11,end:12}];
+ assert.deepEqual(captionWords(original,"Hello world!"),[{word:'Hello',start:10,end:11},{word:'world!',start:11,end:12}]);
+ const expanded=captionWords(original,"It’s my English caption.");
+ assert.equal(expanded[0].start,10);assert.equal(expanded.at(-1).end,12);assert.equal(expanded.length,4);
+ assert.strictEqual(captionWords(original,undefined),original);
+ for(const input of ['',42,'word '.repeat(401),'x'.repeat(201)])assert.throws(()=>captionWords(original,input));
+});
+test('caption studio loads English text and sends corrections to preview and Apply',async()=>{
+ const vm=require('node:vm'),nodes=new Map(),calls=[];
+ const node=id=>{if(!nodes.has(id))nodes.set(id,{value:'',disabled:false,textContent:'',innerHTML:'',listeners:{},addEventListener(k,fn){this.listeners[k]=fn},querySelectorAll(){return[]},replaceChildren(){},showModal(){this.open=true},close(){this.open=false}});return nodes.get(id)};
+ const clip={id:'english-clip',url:'https://example.com/original.mp4',edit:{captionStyle:'white'}};
+ const context={document:{querySelector:node},window:{},api:async(url,opts)=>{calls.push({url,body:opts?.body&&JSON.parse(opts.body)});if(url.endsWith('/text'))return {text:'Hello original world',editable:true};if(url.endsWith('/restyle'))return {url:'https://example.com/edited.mp4',edit:{}};return {presets:[],styles:[]}},authToken:async()=> 'token',fetch:async(url,opts)=>{calls.push({url,body:JSON.parse(opts.body)});return {ok:true,blob:async()=>({})}},URL:{createObjectURL:()=> 'blob:preview',revokeObjectURL(){}},setTimeout:()=>1,clearTimeout(){}};
+ vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../public/app/caption-styles.js'),'utf8'),context);
+ await context.window.openCaptionEditor(clip);assert.equal(node('#cap-text').value,'Hello original world');assert.equal(node('#cap-text').disabled,false);
+ node('#cap-text').value='Hello corrected English';node('#cap-text').listeners.input();
+ await node('#cap-preview').onclick();await node('#cap-apply').onclick();
+ for(const suffix of ['/caption-preview','/restyle'])assert.equal(calls.find(x=>x.url.endsWith(suffix)).body.text,'Hello corrected English');
+});
+test('English text corrections preserve padding outside the visible clip',()=>{
+ const {captionWords,visibleWords}=require('../lib/captionText');
+ const words=[{word:'Before',start:0,end:1},{word:'Wrong',start:10,end:11},{word:'After',start:20,end:21}];
+ assert.deepEqual(visibleWords(words,10,12),[words[1]]);
+ assert.deepEqual(captionWords(words,'Correct English',{start:10,end:12}),[words[0],{word:'Correct',start:10,end:10.5},{word:'English',start:10.5,end:11},words[2]]);
+});
