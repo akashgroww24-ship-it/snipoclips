@@ -99,6 +99,11 @@
 <script>
 let supa, mode='in', recoveryMode=false;
 let lastSignupEmail='';
+try{lastSignupEmail=localStorage.getItem('sc_last_signup_email')||'';}catch{}
+function rememberSignup(email){
+  lastSignupEmail=email.toLowerCase();
+  try{localStorage.setItem('sc_last_signup_email',lastSignupEmail);}catch{}
+}
 const $=id=>document.getElementById(id);
 // Where to go after a successful sign-in (set by /app when it redirects here).
 function nextUrl(){
@@ -251,9 +256,8 @@ $('submit').onclick=async()=>{
   if(!supa) return;
   if($('submit').disabled) return;
   if(_locked()) return;
-  const email=$('email').value.trim(), password=$('pass').value;
+  const email=$('email').value.trim().toLowerCase(), password=$('pass').value;
   if(!email||!password){ msg('Enter your email and password'); return; }
-  if(mode==='up' && email.toLowerCase()===lastSignupEmail){ showUncertainSignup(); return; }
   msg('');
   $('submit').disabled=true;
   try{
@@ -263,6 +267,12 @@ $('submit').onclick=async()=>{
         return msg(error.message+(error.message==='Invalid login credentials'?' If you signed up with Google, use Continue with Google.':'')); }
       _fails=0; location.href = nextUrl();
     }else{
+      // Authenticate first: a returning user keeps the original identity.
+      const existing=await supa.auth.signInWithPassword({email,password});
+      if(!existing.error&&existing.data?.session){rememberSignup(email);location.href=nextUrl();return;}
+      if(existing.error?.code==='email_not_confirmed'){rememberSignup(email);showUncertainSignup();return;}
+      if(existing.error&&existing.error.code!=='invalid_credentials'&&existing.error.message!=='Invalid login credentials')return msg(existing.error.message);
+      if(email===lastSignupEmail){showUncertainSignup();return;}
       const { data, error }=await supa.auth.signUp({
         email, password, options:{ emailRedirectTo:location.origin+'/app' }
       });
@@ -273,11 +283,11 @@ $('submit').onclick=async()=>{
       // With email confirmation enabled, Supabase may return an obfuscated
       // user instead of an error for an existing account (no new identity).
       if(data?.user && Array.isArray(data.user.identities) && data.user.identities.length===0)return showExistingAccount();
-      if(data && data.session){ lastSignupEmail=email.toLowerCase(); location.href = nextUrl(); return; }
+      if(data && data.session){ rememberSignup(email); location.href = nextUrl(); return; }
       // A missing user/identities list cannot prove that an account was made.
       // Never announce success for an ambiguous, privacy-preserving response.
       if(!data?.user || !Array.isArray(data.user.identities)) return showUncertainSignup();
-      lastSignupEmail=email.toLowerCase();
+      rememberSignup(email);
       setMode('in');
       msg('Check your email to confirm your address; the link will open your studio. Already signed up? Sign in instead.', true);
     }

@@ -115,7 +115,8 @@ test('email signup keeps the confirmation message and sends its link to the stud
   const ctx = { mode:'up', lastSignupEmail:'', location, console, nextUrl:()=>'/app', _locked:()=>false,
     $:id=>({submit,email:{value:'new@example.com'},pass:{value:'a-password'}}[id]),
     msg:text=>{message=text;},setMode:()=>{message='';},
-    supa:{auth:{signUp:async input=>{request=input;return {data:{user:{identities:[{provider:'email'}]},session:null},error:null};}}} };
+    rememberSignup:email=>{ctx.lastSignupEmail=email.toLowerCase();},
+    supa:{auth:{signInWithPassword:async()=>({error:{code:'invalid_credentials',message:'Invalid login credentials'}}),signUp:async input=>{request=input;return {data:{user:{identities:[{provider:'email'}]},session:null},error:null};}}} };
   vm.runInNewContext(html.slice(start,end),ctx);
   await submit.onclick();
   assert.equal(request.options.emailRedirectTo,'https://snipoclip.com/app');
@@ -131,7 +132,8 @@ test('ambiguous signup response never says an account was created', async () => 
   const ctx={mode:'up',lastSignupEmail:'',location:{origin:'https://snipoclip.com',href:'/login'},console,
     _locked:()=>false,$:id=>({submit,email:{value:'taken@example.com'},pass:{value:'password123'}}[id]),
     msg:text=>{message=text;},showUncertainSignup:()=>{uncertain++;},
-    supa:{auth:{signUp:async()=>({data:{session:null},error:null})}}};
+    rememberSignup:email=>{ctx.lastSignupEmail=email.toLowerCase();},
+    supa:{auth:{signInWithPassword:async()=>({error:{code:'invalid_credentials',message:'Invalid login credentials'}}),signUp:async()=>({data:{session:null},error:null})}}};
   vm.runInNewContext(html.slice(start,end),ctx);
   await submit.onclick();
   assert.equal(uncertain,1);assert.equal(message,'');assert.equal(submit.disabled,false);
@@ -144,7 +146,8 @@ test('a second signup with the same email does not call Supabase again', async (
   const ctx={mode:'up',lastSignupEmail:'',location:{origin:'https://snipoclip.com'},console,
     _locked:()=>false,$:id=>({submit,email:{value:'TAKEN@example.com'},pass:{value:'password123'}}[id]),
     msg:()=>{},setMode:()=>{},showUncertainSignup:()=>{prompts++;},
-    supa:{auth:{signUp:async()=>{attempts++;return {data:{user:{identities:[{provider:'email'}]},session:null},error:null};}}}};
+    rememberSignup:email=>{ctx.lastSignupEmail=email.toLowerCase();},
+    supa:{auth:{signInWithPassword:async()=>({error:{code:'invalid_credentials',message:'Invalid login credentials'}}),signUp:async()=>{attempts++;return {data:{user:{identities:[{provider:'email'}]},session:null},error:null};}}}};
   vm.runInNewContext(html.slice(start,end),ctx);
   await submit.onclick();await submit.onclick();
   assert.equal(attempts,1);assert.equal(prompts,1);
@@ -162,11 +165,37 @@ test('existing email signup prompts sign in for an obfuscated user or an explici
     const ctx = { mode:'up', lastSignupEmail:'', location:{origin:'https://snipoclip.com',href:'/login'}, console,
       _locked:()=>false, $:id=>({submit,email:{value:'taken@example.com'},pass:{value:'a-password'}}[id]),
       msg:text=>{message=text;}, showExistingAccount:()=>{prompts++;},
-      supa:{auth:{signUp:async()=>response}} };
+      rememberSignup:email=>{ctx.lastSignupEmail=email.toLowerCase();},
+    supa:{auth:{signInWithPassword:async()=>({error:{code:'invalid_credentials',message:'Invalid login credentials'}}),signUp:async()=>response}} };
     vm.runInNewContext(html.slice(start,end),ctx);
     await submit.onclick();
     assert.equal(prompts,1);
     assert.equal(ctx.location.href,'/login');
     assert.equal(message,'');
   }
+});
+
+ test('Create Account with valid existing credentials signs in without creating any identity',async()=>{
+  const start=html.indexOf("$('submit').onclick=async()=>{");const end=html.indexOf("\n$('forgot').onclick=",start);
+  let signups=0,emailUsed;const submit={disabled:false};const ctx={mode:'up',lastSignupEmail:'',location:{origin:'https://snipoclip.com'},console,_locked:()=>false,
+    $:id=>({submit,email:{value:' SAME@Example.com '},pass:{value:'password123'}}[id]),msg:()=>{},rememberSignup:()=>{},nextUrl:()=>'/app',
+    supa:{auth:{signInWithPassword:async input=>{emailUsed=input.email;return {data:{session:{user:{id:'original-user'}}},error:null};},signUp:async()=>{signups++;}}}};
+  vm.runInNewContext(html.slice(start,end),ctx);await submit.onclick();assert.equal(signups,0);assert.equal(emailUsed,'same@example.com');assert.equal(ctx.location.href,'/app');
+ });
+ test('signup guard survives a page reload and storage failure does not break auth',()=>{
+   const start=html.indexOf("let lastSignupEmail='';");const end=html.indexOf('\n',html.indexOf('\n}',start)+2);
+   const source=html.slice(start,end)+'\nglobalThis.saved=lastSignupEmail;globalThis.remember=rememberSignup;';
+   const values=new Map();let ctx={localStorage:{getItem:k=>values.get(k),setItem:(k,v)=>values.set(k,v)}};
+   vm.runInNewContext(source,ctx);ctx.remember('USER@EXAMPLE.COM');
+   const reload={localStorage:ctx.localStorage};vm.runInNewContext(source,reload);assert.equal(reload.saved,'user@example.com');
+   const blocked={localStorage:{getItem(){throw Error('blocked');},setItem(){throw Error('blocked');}}};vm.runInNewContext(source,blocked);assert.doesNotThrow(()=>blocked.remember('user@example.com'));
+ });
+test('unconfirmed email or a rate-limited sign-in never falls through to signup',async()=>{
+ const start=html.indexOf("$('submit').onclick=async()=>{");const end=html.indexOf("\n$('forgot').onclick=",start);
+ for(const code of ['email_not_confirmed','over_request_rate_limit']){
+  let signups=0,prompts=0;const submit={disabled:false};const ctx={mode:'up',lastSignupEmail:'',location:{origin:'https://snipoclip.com'},console,_locked:()=>false,
+   $:id=>({submit,email:{value:'same@example.com'},pass:{value:'password123'}}[id]),msg:()=>{},rememberSignup:()=>{},showUncertainSignup:()=>{prompts++;},
+   supa:{auth:{signInWithPassword:async()=>({error:{code,message:code}}),signUp:async()=>{signups++;}}}};
+  vm.runInNewContext(html.slice(start,end),ctx);await submit.onclick();assert.equal(signups,0);assert.equal(prompts,code==='email_not_confirmed'?1:0);
+ }
 });
