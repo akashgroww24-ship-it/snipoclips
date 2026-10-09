@@ -53,3 +53,20 @@ test('preview route selects only the authenticated user’s clip', async()=>{
   let code=200;await handler({user:{id:'owner'},params:{id:'clip-1'},body:{caption:{preset:'classic'}}},{status(x){code=x;return this},json(){}});
   assert.equal(code,404);assert.equal(filters.id,'clip-1');assert.equal(filters.user_id,'owner');
 });
+test('Studio preset selection replaces stale overrides and export renders visibly different styles',()=>{
+ const vm=require('node:vm'),script=fs.readFileSync(path.join(__dirname,'../public/app/studio.js'),'utf8');
+ const start=script.indexOf('const properties='),end=script.indexOf("$('#project-name').onchange",start);
+ const listeners={},project={captionPreset:'classic',captionColor:'#ffffff',captionSize:74,captionPosition:'bottom',captions:true};
+ vm.runInNewContext(script.slice(start,end),{$:id=>({addEventListener:(_event,fn)=>{listeners[id]=fn;}}),captionPresets:styles.presets,change:fn=>fn(project)});
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'snipo-switch-'));const images=[];
+ try{
+  for(const preset of ['pink','ice','off']){
+   listeners['#captionPreset']({target:{value:preset}});const expected=styles.validate(preset).resolved;
+   assert.equal(project.captionColor,expected.color);assert.equal(project.captionSize,expected.size);assert.equal(project.captionPosition,expected.position);assert.equal(project.captions,preset!=='off');
+   const ass=path.join(dir,preset+'.ass');buildASS([{word:'STYLE',start:0,end:2}],0,2,ass,{caption:{preset,options:{color:project.captionColor,size:project.captionSize,position:project.captionPosition}},w:540,h:960});
+   if(preset==='off')assert.ok(!fs.readFileSync(ass,'utf8').includes('Dialogue: 0'));
+   if(spawnSync('ffmpeg',['-version']).status===0){const image=path.join(dir,preset+'.png');const r=spawnSync('ffmpeg',['-hide_banner','-loglevel','error','-f','lavfi','-i','color=c=blue:s=540x960:d=2','-vf',`subtitles=${ass}`,'-ss','1','-frames:v','1','-y',image]);assert.equal(r.status,0,r.stderr.toString());images.push(fs.readFileSync(image));}
+  }
+  if(images.length){assert.notDeepEqual(images[0],images[1]);assert.notDeepEqual(images[1],images[2]);}
+ }finally{fs.rmSync(dir,{recursive:true,force:true});}
+});
