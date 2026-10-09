@@ -409,6 +409,7 @@ $('#go').onclick=async()=>{
   if(!picked&&!u) return toast('Nothing to clip yet','Paste a video link or choose a file first.','err');
   const fd=new FormData();
   if(picked) fd.append('video',picked); else fd.append('videoUrl',u);
+  fd.append('prompt',($('#clip-prompt')?.value||'').trim().slice(0,800));
   fd.append('ratio',$('#ratio').value); fd.append('duration',$('#duration').value);
   fd.append('captionStyle',$('#captionStyle').value);
   if(window.captionSelection) fd.append('caption',JSON.stringify(window.captionSelection()));

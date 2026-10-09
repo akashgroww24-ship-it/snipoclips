@@ -401,3 +401,6 @@ body.demo .card .menu{transition:none}
   text-shadow:0 0 12px rgba(196,181,253,.6)}
 .bg .glowtl{position:absolute;top:-16%;left:-10%;width:680px;height:560px;border-radius:50%;
   filter:blur(85px);background:rgba(229,73,200,.16);z-index:-1}
+
+/* Full-control generation brief. */
+.clip-brief{flex-basis:100%;margin-top:8px}.clip-brief label{display:block;color:var(--text);font-size:13px;font-weight:700;margin-bottom:9px}.clip-brief label span{color:var(--text-2);font-weight:400;margin-left:8px;font-size:11px}.clip-brief textarea{display:block;width:100%;min-height:92px;resize:vertical;padding:13px;border:1px solid var(--line-2);border-radius:11px;background:var(--bg-2);color:var(--text);font:13px/1.6 system-ui}.clip-brief textarea:focus-visible{outline:2px solid var(--violet-br);outline-offset:2px}.clip-brief p{color:var(--text-2);font-size:11px;line-height:1.6;margin:8px 0 0}

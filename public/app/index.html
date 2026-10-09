@@ -99,16 +99,16 @@
         </div>
 
         <div class="opts">
-          <button class="opt-btn" id="opt-btn" aria-expanded="false">
+          <button class="opt-btn" id="opt-btn" aria-expanded="true">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-            Options
+            Full control
           </button>
           <span class="opt-count" id="opt-count">2 on</span>
         </div>
-        <div class="panel" id="panel">
-          <select class="sel" id="ratio"><option value="9:16">9:16 Reels</option><option value="1:1">1:1</option><option value="4:5">4:5</option><option value="16:9">16:9</option></select>
-          <select class="sel" id="duration"><option value="auto">Auto length</option><option value="short">Short</option><option value="medium">Medium</option><option value="long">Long</option></select>
-          <select class="sel" id="count"><option value="">Auto count</option><option>4</option><option>6</option><option>8</option><option>10</option><option>12</option></select>
+        <div class="panel open" id="panel">
+          <select class="sel" id="ratio" aria-label="Video aspect ratio"><option value="9:16">9:16 Reels</option><option value="1:1">1:1</option><option value="4:5">4:5</option><option value="16:9">16:9</option></select>
+          <select class="sel" id="duration" aria-label="Target clip length"><option value="auto">Auto · 15–60 sec</option><option value="short">Short · 10–30 sec</option><option value="medium">Medium · 30–60 sec</option><option value="long">Long · 60–90 sec</option></select>
+          <select class="sel" id="count" aria-label="Requested number of clips"><option value="">Default · up to 8 clips</option><option value="1">Up to 1 clip</option><option value="2">Up to 2 clips</option><option value="3">Up to 3 clips</option><option value="4">Up to 4 clips</option><option value="5">Up to 5 clips</option><option value="6">Up to 6 clips</option><option value="7">Up to 7 clips</option><option value="8">Up to 8 clips</option><option value="9">Up to 9 clips</option><option value="10">Up to 10 clips</option><option value="11">Up to 11 clips</option><option value="12">Up to 12 clips</option></select>
           <button type="button" class="sel" id="caption-gallery-open">Caption styles: Classic ▾</button><input type="hidden" id="captionStyle" value="classic">
         <select class="sel" id="clipStyle" aria-label="Clip style">
           <option value="clean">Clean look</option>
@@ -116,9 +116,10 @@
           <option value="sigma">Sigma edit</option>
           <option value="meme">Meme</option>
         </select>
-          <select class="sel" id="language"><option value="auto">Auto-detect</option><option value="hi">Hindi</option><option value="en">English</option></select>
+          <select class="sel" id="language" aria-label="Spoken language"><option value="auto">Auto-detect</option><option value="hi">Hindi</option><option value="en">English</option></select>
           <select class="sel" id="audioMode" aria-label="Audio enhancement mode"><option value="speech">Speech clarity and noise reduction</option><option value="background">Balance background sound</option></select>
           <span id="pills" style="display:contents"></span>
+          <div class="clip-brief"><label for="clip-prompt">Describe the clips you want <span>optional</span></label><textarea id="clip-prompt" maxlength="800" rows="3" placeholder="Example: Find three useful tips about starting a business. Keep each clip focused on one tip, with a strong opening."></textarea><p>AI uses this brief to guide highlight selection. Results depend on your source video; your plan and available highlights may limit the number of clips.</p></div>
         </div>
       </div>
     </div>

@@ -229,3 +229,12 @@ test('youtube.authUrl: includes offline access + upload scope + state', () => {
   assert.match(url, /state=STATE123/);
   delete process.env.GOOGLE_CLIENT_ID;
 });
+
+test('Full control sends the clip brief, target length, count and caption selection to generation',()=>{
+ const fs=require('fs'),path=require('path'),vm=require('vm');
+ const source=fs.readFileSync(path.join(__dirname,'../public/app/app.js'),'utf8');
+ const start=source.indexOf('  const fd=new FormData();',source.indexOf("$('#go').onclick=")),end=source.indexOf('  const g=',start);
+ const values={'#clip-prompt':'  Choose the useful tips  ','#ratio':'9:16','#duration':'short','#captionStyle':'white','#clipStyle':'clean','#audioMode':'speech','#count':'3','#language':'en'};
+ let result;vm.runInNewContext(source.slice(start,end)+';result(fd);',{FormData,$:id=>({value:values[id]}),picked:null,u:'https://youtu.be/example',window:{captionSelection:()=>({preset:'white',options:{}})},st:{broll:false},result:fd=>{result=fd;}});
+ assert.equal(result.get('prompt'),'Choose the useful tips');assert.equal(result.get('duration'),'short');assert.equal(result.get('count'),'3');assert.equal(result.get('language'),'en');assert.equal(JSON.parse(result.get('caption')).preset,'white');
+});
