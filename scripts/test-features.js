@@ -90,9 +90,9 @@ function render(opts) {
   return out;
 }
 
-test('buildASS: karaoke mode emits \\k progressive-fill timing tags', () => {
+test('buildASS: karaoke mode emits timed active-word highlight events', () => {
   const ass = render({ captionStyle: 'classic', karaoke: true });
-  assert.ok(/\\k\d+/.test(ass), 'expected \\k timing tags in karaoke mode');
+  assert.ok((ass.match(/Dialogue: 0/g)||[]).length>=WORDS.length, 'expected word-timed highlight events');
 });
 
 test('buildASS: normal mode emits NO \\k timing tags', () => {
@@ -102,7 +102,7 @@ test('buildASS: normal mode emits NO \\k timing tags', () => {
 
 test('buildASS: karaoke defaults ON when unspecified (back-compat)', () => {
   const ass = render({ captionStyle: 'classic' });
-  assert.ok(/\\k\d+/.test(ass), 'karaoke should default on');
+  assert.ok((ass.match(/Dialogue: 0/g)||[]).length>=WORDS.length, 'karaoke should default on');
 });
 
 test('buildASS: Devanagari + Latin words both render (Hinglish safe)', () => {

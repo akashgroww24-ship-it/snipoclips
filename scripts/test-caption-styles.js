@@ -97,3 +97,9 @@ test('English text corrections preserve padding outside the visible clip',()=>{
  assert.deepEqual(visibleWords(words,10,12),[words[1]]);
  assert.deepEqual(captionWords(words,'Correct English',{start:10,end:12}),[words[0],{word:'Correct',start:10,end:10.5},{word:'English',start:10.5,end:11},words[2]]);
 });
+test('karaoke follows actual word timestamps, including silent gaps',()=>{
+ const {karaokeWindows}=require('../lib/karaoke');
+ assert.deepEqual(karaokeWindows([{word:'Hello',start:0,end:.3},{word:'world',start:1,end:1.4}],0,1.4),[{start:0,end:.3,active:0},{start:.3,end:1,active:-1},{start:1,end:1.4,active:1}]);
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'snipo-karaoke-'));
+ try{const file=path.join(dir,'captions.ass');buildASS([{word:'Hello',start:0,end:.3},{word:'world',start:1,end:1.4}],0,1.4,file,{caption:{preset:'karaoke'}});const text=fs.readFileSync(file,'utf8');assert.match(text,/Dialogue: 0,0:00:01.00,0:00:01.40/);assert.ok(text.includes('{\\c&H0015CCFA}world'));}finally{fs.rmSync(dir,{recursive:true,force:true});}
+});

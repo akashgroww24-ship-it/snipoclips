@@ -17,13 +17,15 @@ function render(){
  $('#captionStyle').value=selected;$('#caption-gallery-open').textContent='Caption styles: '+p.name+' ▾';
  $('#caption-gallery').innerHTML=presets.map(q=>`<button type="button" class="cap-card" data-preset="${esc(q.id)}" aria-pressed="${q.id===selected}"><span style="color:${esc(q.style.color)};background:${q.style.box?esc(q.style.background):'#090811'}"><em style="font-family:${esc(q.style.font)};font-weight:${q.style.weight};text-shadow:0 2px ${q.style.shadow}px ${esc(q.style.outlineColor)}">Make every moment count</em></span><b>${esc(q.name)}</b><small>${esc(q.description)}</small></button>`).join('');
  $('#caption-gallery').querySelectorAll('button').forEach(b=>b.onclick=()=>{selected=b.dataset.preset;options={};render();schedulePreview();});
- const style={...p.style,...options};for(const f of fields){const el=$('#cap-'+f);if(el){if(bool.has(f))el.checked=style[f];else el.value=style[f];}}
+ const style={...p.style,...options};if(window.syncKaraokeControl)window.syncKaraokeControl(style.karaoke);for(const f of fields){const el=$('#cap-'+f);if(el){if(bool.has(f))el.checked=style[f];else el.value=style[f];}}
  $('#cap-mine').innerHTML=mine.map(m=>`<div><button data-load="${esc(m.id)}">${esc(m.name)}${m.is_default?' (default)':''}</button> <button data-default="${esc(m.id)}">Set default</button> <button data-rename="${esc(m.id)}">Rename</button> <button data-delete="${esc(m.id)}">Delete</button></div>`).join('');
  $('#cap-mine').querySelectorAll('[data-load]').forEach(b=>b.onclick=()=>{selected=mine.find(x=>x.id===b.dataset.load).style.preset;options={...mine.find(x=>x.id===b.dataset.load).style.options};render();schedulePreview();});
  $('#cap-mine').querySelectorAll('[data-default]').forEach(b=>b.onclick=()=>change(b.dataset.default,{is_default:true}));
  $('#cap-mine').querySelectorAll('[data-rename]').forEach(b=>{const name=prompt('Style name');if(name)change(b.dataset.rename,{name});});
  $('#cap-mine').querySelectorAll('[data-delete]').forEach(b=>{if(confirm('Delete this saved style?'))remove(b.dataset.delete);});
 }
+window.setKaraokeCaption=enabled=>{options.karaoke=!!enabled;render();schedulePreview();};
+$('#cap-karaoke-preset').onclick=()=>{selected='karaoke';options={};render();schedulePreview();};
 function status(message){$('#cap-status').textContent=message;}
 async function reloadMine(){try{mine=(await api('/api/caption-styles/mine')).styles||[];render();}catch(e){status(e.message);}}
 async function change(id,body){try{await api('/api/caption-styles/mine/'+encodeURIComponent(id),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});await reloadMine();status('Saved.');}catch(e){status(e.message);}}

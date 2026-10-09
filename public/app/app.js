@@ -80,8 +80,9 @@ const T=[['karaoke','Karaoke',1],['hook','Hook title',1],['enhance','Enhance aud
 const st={}; T.forEach(([k,,o])=>st[k]=!!o);
 T.forEach(([k,l])=>{ const b=document.createElement('button'); b.className='pill'; b.type='button';
   b.textContent=l; b.setAttribute('aria-pressed',st[k]);
-  b.onclick=()=>{st[k]=!st[k];b.setAttribute('aria-pressed',st[k]);cnt()};
+  b.onclick=()=>{st[k]=!st[k];if(k==='karaoke'&&window.setKaraokeCaption)window.setKaraokeCaption(st[k]);b.setAttribute('aria-pressed',st[k]);cnt()};
   $('#pills').appendChild(b); });
+window.syncKaraokeControl=enabled=>{st.karaoke=!!enabled;const button=$$('#pills .pill')[0];if(button)button.setAttribute('aria-pressed',String(st.karaoke));cnt();};
 function cnt(){ $('#opt-count').textContent=Object.values(st).filter(Boolean).length+' on'; }
 $('#opt-btn').onclick=()=>{const o=$('#panel').classList.toggle('open');$('#opt-btn').setAttribute('aria-expanded',o)};
 cnt();
@@ -95,7 +96,7 @@ const TOOLS=[['M7 4v16M17 4v16M7 9h10M7 15h10','Long to shorts',['karaoke','hook
   ['M6 10v4M10 6v12M14 8v8M18 11v2','Enhance audio',['enhance'],0]];
 $$('.tool').forEach((b,i)=>{ const on=TOOLS[i]?TOOLS[i][2]:[];
   b.onclick=()=>{ $$('.tool').forEach(x=>x.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed','true');
-    T.forEach(([k])=>st[k]=on.indexOf(k)>-1); $$('#pills .pill').forEach((p,n)=>p.setAttribute('aria-pressed',st[T[n][0]])); cnt(); }; });
+    T.forEach(([k])=>st[k]=on.indexOf(k)>-1);if(window.setKaraokeCaption)window.setKaraokeCaption(st.karaoke); $$('#pills .pill').forEach((p,n)=>p.setAttribute('aria-pressed',st[T[n][0]])); cnt(); }; });
 const toolDescriptions=['Find highlights in long videos','Time captions to speech','Pick the strongest moments',
   'Caption mixed Hindi and English','Add supporting footage','Improve speech or balance background sound'];
 $$('.tool').slice(0,toolDescriptions.length).forEach((b,i)=>{
