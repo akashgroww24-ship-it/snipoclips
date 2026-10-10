@@ -19,3 +19,9 @@ test('lead capture validates consent, deduplicates, fails safely and protects ad
   assert.equal((await post({email:'bot@example.com',consent:true,website:'bot'})).status,200);assert.equal(records.size,1);
  }finally{server.closeAllConnections();await new Promise(r=>server.close(r));}
 });
+
+test('origin allowlist includes verified Snipo URLs while rejecting lookalikes',()=>{
+ const {allowedOrigins}=require('../lib/origins'),origins=allowedOrigins('https://custom.example');
+ for(const o of ['https://snipoclip.com','https://www.snipoclip.com','https://snipoclips.onrender.com','https://custom.example'])assert(origins.has(o));
+ assert(!origins.has('https://snipoclip.com.attacker.example'));assert(!origins.has('https://attacker.example'));
+});

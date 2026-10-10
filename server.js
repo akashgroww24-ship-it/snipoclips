@@ -50,10 +50,10 @@ app.use(helmet({
   hsts: { maxAge: 31536000, includeSubDomains: true }, referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
 
-const allowed = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
+const allowed = require('./lib/origins').allowedOrigins(process.env.ALLOWED_ORIGINS);
 const devLocal = process.env.NODE_ENV !== 'production' || process.env.DEV_TEST_MODE === '1';
 const isLocalhost = o => /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(o);
-app.use(cors({ origin(origin, cb) { if (!origin || allowed.includes(origin) || (devLocal && isLocalhost(origin))) return cb(null, true); return cb(new Error('Origin not allowed')); }, credentials: true }));
+app.use(cors({ origin(origin, cb) { if (!origin || allowed.has(origin) || (devLocal && isLocalhost(origin))) return cb(null, true); return cb(new Error('Origin not allowed')); }, credentials: true }));
 
 app.post('/api/billing/webhook', express.raw({ type: '*/*' }), async (req, res) => {
   const crypto = require('crypto');
