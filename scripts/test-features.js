@@ -238,3 +238,14 @@ test('Full control sends the clip brief, target length, count and caption select
  let result;vm.runInNewContext(source.slice(start,end)+';result(fd);',{FormData,$:id=>({value:values[id]}),picked:null,u:'https://youtu.be/example',window:{captionSelection:()=>({preset:'white',options:{}})},st:{broll:false},result:fd=>{result=fd;}});
  assert.equal(result.get('prompt'),'Choose the useful tips');assert.equal(result.get('duration'),'short');assert.equal(result.get('count'),'3');assert.equal(result.get('language'),'en');assert.equal(JSON.parse(result.get('caption')).preset,'white');
 });
+
+// A verification wall is not a transient rate limit: retries must not be the advice.
+test('YouTube sign-in wall has actionable file-upload recovery, separate from 429', () => {
+  const { classifyDownloadError } = require('../lib/pipeline');
+  const blocked = classifyDownloadError({ stderr: "ERROR: [youtube] Sign in to confirm you’re not a bot." });
+  assert.equal(blocked.code, 'youtube_verification_required');
+  assert.match(blocked.message, /Upload the original video file/);
+  assert.doesNotMatch(blocked.message, /try again in a few minutes/i);
+  const limited = classifyDownloadError({ stderr: 'HTTP Error 429: Too Many Requests' });
+  assert.equal(limited.code, 'rate_limited');
+});
