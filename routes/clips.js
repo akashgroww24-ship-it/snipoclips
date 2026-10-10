@@ -15,6 +15,8 @@ const { captionWords, visibleWords } = require('../lib/captionText');
 
 const router = express.Router();
 const activeRestyles = new Set();
+const { deletingClips, drainMediaCleanup } = require('../lib/folder-deletion');
+const deletingFolders = new Set();
 
 // SSRF GUARD: the videoUrl is handed to yt-dlp, which will fetch ANY URL —
 // including internal services, cloud metadata (169.254.169.254) and file://.
@@ -182,6 +184,36 @@ router.get('/clips', requireUser, async (req, res) => {
   res.json({ clips: withUrls });
 });
 
+// Delete one owned, finished folder. Database removal and cleanup enqueue are atomic.
+router.delete('/folders/:jobId', requireUser, async (req, res) => {
+  const jobId = req.params.jobId;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(jobId))
+    return res.status(400).json({ error: 'Invalid folder ID.' });
+  if (deletingFolders.has(jobId)) return res.status(409).json({ error: 'Folder deletion is already in progress.' });
+  deletingFolders.add(jobId);
+  let ids = [];
+  try {
+    const { data: job, error: jobError } = await admin.from('jobs').select('id,status').eq('id',jobId).eq('user_id',req.user.id).maybeSingle();
+    if (jobError) throw jobError;
+    if (!job) return res.status(404).json({ error: 'Folder not found.' });
+    if (!['done','error'].includes(job.status)) return res.status(409).json({ error: 'Wait for generation to finish before deleting this folder.' });
+    const { data: rows, error } = await admin.from('clips').select('id').eq('job_id',jobId).eq('user_id',req.user.id);
+    if (error) throw error;
+    ids = (rows || []).map(c => c.id);
+    ids.forEach(id => deletingClips.add(id));
+    if (ids.some(id => activeRestyles.has(id) || require('./studio').isClipBusy(id)))
+      return res.status(409).json({ error: 'An editor is saving or exporting a video in this folder. Try again when it finishes.' });
+    const result = await admin.rpc('delete_owned_folder',{p_job_id:jobId,p_user_id:req.user.id});
+    if (result.error) throw result.error;
+    if (result.data?.error === 'not_found') return res.status(404).json({ error: 'Folder not found.' });
+    if (result.data?.error) return res.status(409).json({ error: 'Wait for generation or publishing to finish before deleting this folder.' });
+    if (!result.data?.deleted) throw new Error('Deletion did not complete');
+    res.json({ deleted: true, clips: result.data.clips });
+    void drainMediaCleanup(admin);
+  } catch (e) { console.error('[folder deletion]',e.message);res.status(503).json({ error: 'Could not delete the folder. Please try again.' }); }
+  finally { ids.forEach(id => deletingClips.delete(id));deletingFolders.delete(jobId); }
+});
+
 // A folder represents one generation job. Only its owner can rename it.
 router.patch('/folders/:jobId', requireUser, async (req, res) => {
   const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
@@ -312,6 +344,7 @@ router.post('/clips/:id/restyle', requireUser, express.json(), async (req, res) 
   catch(e) { return res.status(400).json({error:e.message}); }
   edit.words = words;
 
+  if (deletingClips.has(clip.id)) return res.status(409).json({error:'This folder is being deleted.'});
   if (activeRestyles.has(clip.id)) return res.status(409).json({error:'This clip is already rendering.'});
   activeRestyles.add(clip.id);
   const work = path.join(TMP, 'edit_' + clip.id + '_' + Date.now());

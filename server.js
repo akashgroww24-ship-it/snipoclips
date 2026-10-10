@@ -29,6 +29,7 @@ const { startCleanupScheduler } = require('./lib/cleanup');
 const { visitMiddleware } = require('./lib/visits');
 
 db.ensureSeed();
+require('./lib/folder-deletion').startMediaCleanup(sbAdmin);
 startCleanupScheduler(); // auto-delete clips older than CLIP_RETENTION_DAYS (default 30)
 require('./lib/social-worker').start();
 

@@ -251,11 +251,12 @@ function draw(){ const q=$('#q').value.trim().toLowerCase();
   $('#folder-nav').innerHTML=`<button type="button" class="folder-tab ${folderCategory==='all'?'active':''}" data-category="all">All folders</button>
     <button type="button" class="folder-tab ${folderCategory==='shorts'?'active':''}" data-category="shorts">Shorts</button>
     <button type="button" class="folder-tab ${folderCategory==='reels'?'active':''}" data-category="reels">AI Reels</button>`+
-    (current?'<button type="button" class="folder-back" id="folder-back">← Back to folders</button><button type="button" class="folder-back" id="folder-rename-current">Rename folder</button>':'');
+    (current?'<button type="button" class="folder-back" id="folder-back">← Back to folders</button><button type="button" class="folder-back" id="folder-rename-current">Rename folder</button><button type="button" class="folder-delete" id="folder-delete-current">Delete folder</button>':'');
   $$('#folder-nav [data-category]').forEach(b=>b.onclick=()=>{folderCategory=b.dataset.category;openFolder=null;renamingFolder=null;draw();});
   if(current){
     $('#folder-back').onclick=()=>{openFolder=null;draw();};
     $('#folder-rename-current').onclick=()=>{openFolder=null;startFolderRename(current.key);};
+    $('#folder-delete-current').onclick=()=>deleteFolder(current.key);
   }
   const list=current ? current.items.filter(c=>!q||(c.title||'').toLowerCase().includes(q)).sort(byDate) :
     visible.filter(f=>!q||folderTitle(f).toLowerCase().includes(q)||f.items.some(c=>(c.title||'').toLowerCase().includes(q)) ||
@@ -266,6 +267,7 @@ function draw(){ const q=$('#q').value.trim().toLowerCase();
     <small>${q?'Try another word.':'Create Shorts above or make an AI Reel to see it here.'}</small></div>`; return; }
   $('#grid').innerHTML=current?list.map(card).join(''):list.map(folderCard).join('');
   $$('.folder-open').forEach(el=>el.onclick=()=>{openFolder=el.dataset.folder;$('#q').value='';renamingFolder=null;draw();});
+  $$('.folder-delete[data-folder]').forEach(el=>el.onclick=()=>deleteFolder(el.dataset.folder));
   $$('.folder-rename').forEach(el=>el.onclick=()=>startFolderRename(el.dataset.folder));
   $$('.folder-cancel').forEach(el=>el.onclick=()=>{renamingFolder=null;draw();});
   $$('.folder-edit').forEach(el=>{
@@ -291,7 +293,7 @@ function folderCard(f){
     <span class="folder-icon" aria-hidden="true">${reel?'▶':'▣'}</span>
     <span class="folder-detail"><strong>${escapeHtml(name)}</strong><small>${escapeHtml(subtitle)}</small></span>
     <span class="folder-arrow" aria-hidden="true">→</span></button>
-    <button type="button" class="folder-rename" data-folder="${escapeHtml(f.key)}" aria-label="Rename ${escapeHtml(name)} folder">Rename</button></article>`;
+    <button type="button" class="folder-rename" data-folder="${escapeHtml(f.key)}" aria-label="Rename ${escapeHtml(name)} folder">Rename</button><button type="button" class="folder-delete" data-folder="${escapeHtml(f.key)}" aria-label="Delete ${escapeHtml(name)} folder">Delete</button></article>`;
 }
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function startFolderRename(key){renamingFolder=key;$('#q').value='';draw();const input=$('.folder-edit input');if(input){input.focus();input.select();}}
@@ -305,6 +307,19 @@ async function saveFolderRename(form){
     clips.forEach(c=>{if(String(c.job_id||c.id)===jobId)c.folder_name=name;});
     renamingFolder=null;draw();toast('Folder renamed','Your new name was saved.');
   }catch(e){save.disabled=false;toast('Could not rename folder','Please try again.','err');}
+}
+async function deleteFolder(key){
+  const jobId=key.split(':').slice(1).join(':');
+  const items=clips.filter(c=>String(c.job_id||c.id)===jobId);
+  if(!items.length)return;
+  const name=folderTitle({type:key.startsWith('reels:')?'reels':'shorts',items,date:items[0].created_at});
+  if(!confirm('Delete "'+name+'" and all videos inside it?\n\nThis permanently removes its clips, caption edits, Studio drafts, uploaded editor assets and saved exports from Snipo Clips. Download anything you want to keep first. Videos already posted to social media and your plan allowance are unchanged.'))return;
+  const buttons=$$('.folder-delete');buttons.forEach(b=>b.disabled=true);
+  try{
+    if(!PREVIEW)await api('/api/folders/'+encodeURIComponent(jobId),{method:'DELETE'});
+    clips=clips.filter(c=>String(c.job_id||c.id)!==jobId);
+    openFolder=null;renamingFolder=null;draw();toast('Folder deleted','The folder and its videos were removed.');
+  }catch(e){buttons.forEach(b=>b.disabled=false);toast('Could not delete folder',e.message||'Please try again.','err');}
 }
 function card(c){
   const secs=(c.end_sec!=null&&c.start_sec!=null)?Math.round(c.end_sec-c.start_sec):null;
