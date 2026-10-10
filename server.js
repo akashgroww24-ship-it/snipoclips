@@ -100,6 +100,7 @@ app.use('/api', clipsRouter);
 app.use('/api', require('./routes/studio'));
 app.use('/api', billingRouter);
 app.use('/api/promo', promoRouter);
+app.use('/api', require('./routes/leads'));
 app.use('/api', youtubeRouter);
 app.use('/api', socialRouter);
 app.use('/api', reelsRouter);

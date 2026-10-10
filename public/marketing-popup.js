@@ -30,7 +30,7 @@
   function dismiss(days=0){dismissed=true;clearTimeout(timer);try{sessionStorage.setItem(sessionKey,'1');}catch{}if(days)try{localStorage.setItem(snoozeKey,String(Date.now()+days*86400000));}catch{}root.remove();document.removeEventListener('keydown',escape);window.removeEventListener('storage',syncDismissal);}
   close.addEventListener('click',()=>dismiss());later.addEventListener('click',()=>dismiss(7));
   link.addEventListener('click',()=>{dismiss();if(campaign.url==='#funnel-form'){const heading=document.querySelector('[data-step]:not([hidden]) h2');if(heading)heading.focus();}});
-  function busy(){const active=document.activeElement;return document.hidden||document.querySelector('dialog[open]')||document.fullscreenElement||active?.matches('input,textarea,select,[contenteditable="true"]')||document.querySelector('#proc.on')||Array.from(document.querySelectorAll('video')).some(v=>!v.paused&&!v.ended);}
+  function busy(){const active=document.activeElement;return (document.getElementById('snipo-lead')&&!document.getElementById('snipo-lead').hidden)||document.hidden||document.querySelector('dialog[open]')||document.fullscreenElement||active?.matches('input,textarea,select,[contenteditable="true"]')||document.querySelector('#proc.on')||Array.from(document.querySelectorAll('video')).some(v=>!v.paused&&!v.ended);}
   function show(){if(dismissed)return;if(busy()){timer=setTimeout(show,3000);return;}root.hidden=false;visible=true;}
   function escape(event){if(event.key==='Escape'&&visible&&!document.querySelector('dialog[open]'))dismiss();}
   function syncDismissal(event){if(event.key===snoozeKey&&Number(event.newValue)>Date.now())dismiss();}
