@@ -25,6 +25,23 @@ test('API errors are actionable and do not expose credentials',async()=>{
  }
  await assert.rejects(api.streamingData('channel',{key:'x'}),{code:'invalid_video_id'});
 });
+test('temporary provider failure automatically recovers with one bounded retry',async()=>{
+ let calls=0;const waits=[];
+ const result=await api.streamingData('VyHV0BRtdxo',{key:'secret',sleep:async ms=>waits.push(ms),fetchImpl:async()=>++calls===1?new Response('',{status:503}):new Response('{"formats":[]}')});
+ assert.deepEqual(result,{formats:[]});assert.equal(calls,2);assert.deepEqual(waits,[2000]);
+});
+test('diagnostics preserve status and never retry credentials, quota or long Retry-After',async()=>{
+ for(const status of [401,403,429,404,500,503]){
+  let calls=0;
+  await assert.rejects(api.streamingData('VyHV0BRtdxo',{key:'secret',sleep:async()=>assert.fail('unexpected retry'),fetchImpl:async()=>{calls++;return new Response('secret',{status,headers:{'retry-after':'120'}});}}),e=>e.message.includes('HTTP '+status)&&!e.message.includes('secret'));
+  assert.equal(calls,1);
+ }
+});
+test('persistent network failures stop after two attempts',async()=>{
+ let calls=0;
+ await assert.rejects(api.streamingData('VyHV0BRtdxo',{key:'secret',sleep:async()=>{},fetchImpl:async()=>{calls++;throw new Error('secret');}}),{code:'provider_network'});
+ assert.equal(calls,2);
+});
 test('media download blocks private redirects, enforces size and cleans partial files',async()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'rapid-test-')),dest=path.join(dir,'v.mp4');
  try{
