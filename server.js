@@ -153,6 +153,8 @@ if (process.env.DEV_TEST_MODE === '1' && process.env.NODE_ENV !== 'production') 
   app.post('/api/test-clip', up.single('video'), async (req, res) => { try { const source = { filePath: req.file ? req.file.path : null, videoUrl: req.body.videoUrl || null }; if (!source.filePath && !source.videoUrl) return res.status(400).json({ error: 'Upload a file or paste a URL' }); res.json(await runTestJob(source, outDir)); } catch (e) { res.status(500).json({ error: String(e.message || e).slice(0, 400) }); } });
 }
 
+app.get('/funnel', (req, res) => res.redirect(302, '/start'));
+app.get('/landing', (req, res) => res.redirect(302, '/'));
 app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
 app.get('/app', (req, res) => res.sendFile(path.join(__dirname, 'public/app/index.html')));
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public/app/login.html')));

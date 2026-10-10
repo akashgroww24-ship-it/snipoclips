@@ -1,0 +1,2 @@
+(()=>{const ids=['terms','privacy','refund','cookies'];function route(){const key=location.hash.replace(/^#\/?/,'');const legal=ids.includes(key)&&!!document.getElementById(key);const main=document.querySelector('main');if(main)main.hidden=legal;ids.forEach(id=>{const el=document.getElementById(id);if(el)el.hidden=!(legal&&id===key);});if(legal)scrollTo(0,0);if(key==='app')location.assign('/app');}addEventListener('hashchange',route);route();})();
+
