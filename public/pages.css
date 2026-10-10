@@ -37,3 +37,6 @@ details .a{padding:0 20px 18px;color:var(--muted)}
 footer{border-top:1px solid var(--line);margin-top:64px;padding:30px 0;color:var(--muted);font-size:14px;text-align:center}
 footer a{color:var(--muted)}footer a:hover{color:var(--text)}
 @media(max-width:760px){.g3,.g2,.prices{grid-template-columns:1fr}.hero h1{font-size:34px}.links{display:none}}
+
+/* Monthly list price and current offer, shown together. */
+.price-offer{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:14px}.regular-price{font-size:14px;color:var(--muted)}.regular-price s{text-decoration-thickness:2px}.discount-badge{font-size:12px;font-weight:700;color:#baf5dc;background:rgba(79,210,155,.12);border:1px solid rgba(79,210,155,.25);border-radius:999px;padding:4px 9px}
