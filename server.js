@@ -101,6 +101,7 @@ app.use('/api', require('./routes/studio'));
 app.use('/api', billingRouter);
 app.use('/api/promo', promoRouter);
 app.use('/api', require('./routes/leads'));
+app.get('/admin/api/import-provider', requireAdmin, (req,res)=>{res.set('Cache-Control','no-store');res.json({youtubeProvider:require('./lib/rapidapi-youtube').configured()?'rapidapi-youtube138':'yt-dlp',rapidApiKeyConfigured:require('./lib/rapidapi-youtube').configured(),host:'youtube138.p.rapidapi.com',liveMediaAccessTestRequired:true});});
 app.use('/api', youtubeRouter);
 app.use('/api', socialRouter);
 app.use('/api', reelsRouter);
